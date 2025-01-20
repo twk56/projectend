@@ -1,0 +1,15 @@
+/* styles.css */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%; /* ทำให้ HTML และ Body สูงเต็มหน้าจอ */
+}
+
+body {
+  font-family: 'Roboto', sans-serif; /* ใช้ฟอนต์มาตรฐานจาก MUI */
+  background-color: #f0f0f0; /* สีพื้นหลังที่ดูสะอาด */
+}
+
+* {
+  box-sizing: border-box; /* ช่วยจัดระเบียบการคำนวณขนาดองค์ประกอบ */
+}
