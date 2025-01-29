@@ -32,7 +32,7 @@ const Navbar = () => {
           variant="h6" 
           sx={{ flexGrow: 1, fontWeight: 'bold', letterSpacing: '0.1rem' }}
         >
-          อยากนอนเฉยๆอ่ะ
+          ML
         </Typography>
         <Box>
           <NavButton color="inherit" component={Link} to="/" startIcon={<HomeIcon />}>
