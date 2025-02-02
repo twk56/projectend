@@ -1,32 +1,25 @@
+// App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Homepage from './components/Homepage';
-import Login from './components/Login';
-import Register from './components/Register';
-import Booking from './components/Booking';
-import Navbar from './components/Navbar';
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Home from './pages/Home';
+import Register from './pages/Register';
+import Booking from './pages/Booking';
+// นำเข้าหน้าอื่นๆ ตามต้องการ
 
 const App = () => {
   return (
     <Router>
-      <Navbar />
-      <div
-        style={{
-          height: '100vh', // เต็มความสูงของหน้าจอ
-          backgroundColor: '#f5f5f5', // พื้นหลังที่ดูดี
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
+      <Layout>
         <Routes>
-          <Route path="/" element={<Homepage />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/booking" element={<Booking />} />
+          {/* เพิ่มเส้นทางอื่นๆ ตามต้องการ */}
         </Routes>
-      </div>
+      </Layout>
     </Router>
   );
 };
