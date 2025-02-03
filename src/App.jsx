@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Booking from './pages/Booking';
+import Profile from './pages/Profile';
 // นำเข้าหน้าอื่นๆ ตามต้องการ
 
 const App = () => {
@@ -17,7 +18,8 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/booking" element={<Booking />} />
-          {/* เพิ่มเส้นทางอื่นๆ ตามต้องการ */}
+          <Route path="/profile" element={<Profile />} /> 
+                   {/* เพิ่มเส้นทางอื่นๆ ตามต้องการ */}
         </Routes>
       </Layout>
     </Router>
