@@ -116,7 +116,7 @@ const Navbar = () => {
             <DesktopMenu>
               {isLoggedIn && (
                 <NavButton component={Link} to="/booking" startIcon={<BookIcon />}>
-                  จองห้อง
+                  ห้อง
                 </NavButton>
               )}
 
@@ -132,7 +132,7 @@ const Navbar = () => {
               ) : (
                 <>
                   <NavButton component={Link} to="/profile" startIcon={<PersonIcon />}>
-                    โปรไฟล์
+                    สถานะ
                   </NavButton>
                   <NavButton onClick={handleLogout} startIcon={<ExitToAppIcon />}>
                     ออกจากระบบ

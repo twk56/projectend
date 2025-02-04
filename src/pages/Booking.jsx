@@ -10,6 +10,21 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/system';
 
+// ==== สำหรับ Date/Time Picker และ Day.js ====
+import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
+// Plugin & Locale
+import dayjs from 'dayjs';
+import 'dayjs/locale/th'; // Locale ไทย
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale('th');
+dayjs.tz.setDefault('Asia/Bangkok');
+
 const StyledContainer = styled(Container)(({ theme }) => ({
   background: 'rgba(255, 255, 255, 0.8)',
   padding: theme.spacing(4),
@@ -20,20 +35,46 @@ const StyledContainer = styled(Container)(({ theme }) => ({
 }));
 
 const Booking = () => {
+  const availableRooms = [
+    'CO-WORKING',
+    'Operating Systems',
+    'Data Management Systems',
+    'Computer Room & Control Systems',
+  ];
+
   const [room, setRoom] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [time, setTime] = useState(null);
   const [duration, setDuration] = useState('');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  // กำหนด minTime / maxTime ช่วง 09:00 - 18:00
+  const minTime = dayjs().tz('Asia/Bangkok').set('hour', 9).set('minute', 0);
+  const maxTime = dayjs().tz('Asia/Bangkok').set('hour', 18).set('minute', 0);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // เพิ่มฟังก์ชันการจองห้องที่นี่
-    setMessage(`จองห้อง ${room} เรียบร้อยแล้วสำหรับวันที่ ${date} เวลา ${time} เป็นเวลา ${duration}`);
+    setError('');
+    setMessage('');
+
+    if (!time) {
+      setError('กรุณาเลือกเวลา');
+      return;
+    }
+
+    // ตรวจสอบว่าค่า time อยู่ในช่วง 09:00-18:00 จริงหรือไม่
+    if (time.isBefore(minTime) || time.isAfter(maxTime)) {
+      setError('กรุณาเลือกเวลาได้เฉพาะช่วง 09:00 - 18:00 น.');
+      return;
+    }
+
+    // แสดงผลเวลาในรูปแบบ HH:mm น.
+    const timeString = time.format('HH:mm [น.]');
+    setMessage(`จองห้อง "${room}" เรียบร้อยแล้ว เวลา ${timeString} ใช้งาน ${duration}`);
+
     // รีเซ็ตฟอร์ม
     setRoom('');
-    setDate('');
-    setTime('');
+    setTime(null);
     setDuration('');
   };
 
@@ -50,50 +91,59 @@ const Booking = () => {
     >
       <StyledContainer>
         <Typography variant="h4" align="center" gutterBottom>
-          จองห้อง
+          ห้อง
         </Typography>
+
         {message && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {message}
           </Alert>
         )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit}>
           <TextField
             select
-            label="เลือกห้อง"
+            label="เลือกห้อง (ที่ว่าง)"
             value={room}
             onChange={(e) => setRoom(e.target.value)}
             fullWidth
             margin="normal"
             required
           >
-            <MenuItem value="CO-WORKING">CO-WORKING</MenuItem>
-            <MenuItem value="Operating Systems">Operating Systems</MenuItem>
-            <MenuItem value="Data Management Systems">Data Management Systems</MenuItem>
-            <MenuItem value="Computer Room & Control Systems">Computer Room & Control Systems</MenuItem>
+            {availableRooms.map((r) => (
+              <MenuItem key={r} value={r}>
+                {r}
+              </MenuItem>
+            ))}
           </TextField>
 
-          <TextField
-            label="เลือกวันที่"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            required
-          />
-
-          <TextField
-            label="เลือกเวลา"
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            required
-          />
+          {/* TimePicker ตั้งค่าให้ใช้งาน 24 ชม., ขั้นเวลา 30 นาที ฯลฯ */}
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <TimePicker
+              label="เลือกเวลา (09:00 - 18:00)"
+              value={time}
+              onChange={(newValue) => setTime(newValue)}
+              ampm={false}             // ใช้ระบบ 24 ชั่วโมง
+              views={['hours', 'minutes']}   // ให้เลือกแค่ชั่วโมงและนาที
+              reduceAnimations={true}  // ลด Animation ให้เปลี่ยนไวขึ้น
+              minutesStep={30}         // เลือกทีละ 30 นาที
+              minTime={minTime}
+              maxTime={maxTime}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  fullWidth
+                  margin="normal"
+                  required
+                />
+              )}
+            />
+          </LocalizationProvider>
 
           <TextField
             select
@@ -106,6 +156,8 @@ const Booking = () => {
           >
             <MenuItem value="30 นาที">30 นาที</MenuItem>
             <MenuItem value="1 ชั่วโมง">1 ชั่วโมง</MenuItem>
+            <MenuItem value="1 ชั่วโมง 30 นาที">1 ชั่วโมง 30 นาที</MenuItem>
+            <MenuItem value="2 ชั่วโมง">2 ชั่วโมง</MenuItem>
           </TextField>
 
           <Button
