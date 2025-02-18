@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import {
   AppBar,
   Toolbar,
@@ -24,6 +25,7 @@ import BookIcon from "@mui/icons-material/Book";
 import PersonIcon from "@mui/icons-material/Person";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import MenuIcon from "@mui/icons-material/Menu";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings"; // ไอคอนสำหรับ Admin
 
 // ฟังก์ชันซ่อน Navbar เมื่อเลื่อนลง
 function HideOnScroll(props) {
@@ -88,19 +90,31 @@ const DesktopMenu = styled(Box)({
 const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ ตรวจสอบว่ามี Token หรือไม่ (โหลดครั้งแรก)
+  // ตรวจสอบ Token และ role จาก JWT เมื่อโหลดหน้า
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        // ตรวจสอบว่าฟิลด์ role ใน token เป็น "admin" หรือไม่
+        setIsAdmin(decoded.role === "admin");
+      } catch (error) {
+        console.error("ไม่สามารถถอดรหัส token ได้:", error);
+        setIsAdmin(false);
+      }
+    }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token"); // ลบ Token
     setIsLoggedIn(false);
+    setIsAdmin(false);
     navigate("/login"); // กลับไปหน้า Login
-    setTimeout(() => window.location.reload(), 100); // ✅ รีเฟรชหลังจากเปลี่ยนเส้นทาง
+    setTimeout(() => window.location.reload(), 100); // รีเฟรชหลังจากเปลี่ยนเส้นทาง
   };
 
   return (
@@ -115,23 +129,52 @@ const Navbar = () => {
             {/* เมนูสำหรับเดสก์ท็อป */}
             <DesktopMenu>
               {isLoggedIn && (
-                <NavButton component={Link} to="/booking" startIcon={<BookIcon />}>
-                  ห้อง
-                </NavButton>
+                <>
+                  <NavButton
+                    component={Link}
+                    to="/booking"
+                    startIcon={<BookIcon />}
+                  >
+                    ห้อง
+                  </NavButton>
+
+                  {/* แสดงปุ่ม Admin เฉพาะเมื่อ user มี role เป็น "admin" */}
+                  {isAdmin && (
+                    <NavButton
+                      component={Link}
+                      to="/admin"
+                      startIcon={<AdminPanelSettingsIcon />}
+                    >
+                      Admin
+                    </NavButton>
+                  )}
+                </>
               )}
 
               {!isLoggedIn ? (
                 <>
-                  <NavButton component={Link} to="/login" startIcon={<LoginIcon />}>
+                  <NavButton
+                    component={Link}
+                    to="/login"
+                    startIcon={<LoginIcon />}
+                  >
                     เข้าสู่ระบบ
                   </NavButton>
-                  <NavButton component={Link} to="/register" startIcon={<PersonAddIcon />}>
+                  <NavButton
+                    component={Link}
+                    to="/register"
+                    startIcon={<PersonAddIcon />}
+                  >
                     สมัครสมาชิก
                   </NavButton>
                 </>
               ) : (
                 <>
-                  <NavButton component={Link} to="/profile" startIcon={<PersonIcon />}>
+                  <NavButton
+                    component={Link}
+                    to="/profile"
+                    startIcon={<PersonIcon />}
+                  >
                     สถานะ
                   </NavButton>
                   <NavButton onClick={handleLogout} startIcon={<ExitToAppIcon />}>
@@ -142,7 +185,11 @@ const Navbar = () => {
             </DesktopMenu>
 
             {/* เมนูสำหรับมือถือ */}
-            <MobileMenuButton color="inherit" aria-label="menu" onClick={() => setDrawerOpen(true)}>
+            <MobileMenuButton
+              color="inherit"
+              aria-label="menu"
+              onClick={() => setDrawerOpen(true)}
+            >
               <MenuIcon />
             </MobileMenuButton>
           </Toolbar>
@@ -150,16 +197,37 @@ const Navbar = () => {
       </HideOnScroll>
 
       {/* Drawer สำหรับเมนูมือถือ */}
-      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <Box sx={{ width: 250 }} role="presentation" onClick={() => setDrawerOpen(false)} onKeyDown={() => setDrawerOpen(false)}>
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      >
+        <Box
+          sx={{ width: 250 }}
+          role="presentation"
+          onClick={() => setDrawerOpen(false)}
+          onKeyDown={() => setDrawerOpen(false)}
+        >
           <List>
             {isLoggedIn && (
-              <ListItem button component={Link} to="/booking">
-                <ListItemIcon style={{ color: "#000000" }}>
-                  <BookIcon />
-                </ListItemIcon>
-                <ListItemText primary="จองห้อง" style={{ color: "#000000" }} />
-              </ListItem>
+              <>
+                <ListItem button component={Link} to="/booking">
+                  <ListItemIcon style={{ color: "#000000" }}>
+                    <BookIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="จองห้อง" style={{ color: "#000000" }} />
+                </ListItem>
+
+                {/* ลิงก์สำหรับหน้า Admin เฉพาะเมื่อ role เป็น "admin" */}
+                {isAdmin && (
+                  <ListItem button component={Link} to="/admin">
+                    <ListItemIcon style={{ color: "#000000" }}>
+                      <AdminPanelSettingsIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Admin" style={{ color: "#000000" }} />
+                  </ListItem>
+                )}
+              </>
             )}
 
             {!isLoggedIn ? (

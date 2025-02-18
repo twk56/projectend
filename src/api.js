@@ -1,13 +1,13 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/api"; // ✅ Backend ต้องมี `/api`
+const API_URL = "http://localhost:4999/api";
 
 export const registerUser = async (userData) => {
     return await axios.post(`${API_URL}/register`, userData);
 };
 
 export const loginUser = async (userData) => {
-    return await axios.post(`${API_URL}/login`, userData); // ✅ ใช้ studentId
+    return await axios.post(`${API_URL}/login`, userData);
 };
 
 export const getProfile = async (token) => {

@@ -42,7 +42,9 @@ const Register = () => {
         {error && <Alert severity="error">❌ {error}</Alert>}
 
         <Box component="form" onSubmit={handleRegister} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <TextField label="ขื่อ-นามสกุล" type="email" variant="outlined" fullWidth required onChange={(e) => setUser({ ...user, email: e.target.value })} />
           <TextField label="อีเมล" type="email" variant="outlined" fullWidth required onChange={(e) => setUser({ ...user, email: e.target.value })} />
+          <TextField label="รหัสสาขา" type="email" variant="outlined" fullWidth required onChange={(e) => setUser({ ...user, email: e.target.value })} />
           <TextField label="รหัสนักศึกษา" variant="outlined" fullWidth required onChange={(e) => setUser({ ...user, studentId: e.target.value })} />
           <TextField label="รหัสผ่าน" type="password" variant="outlined" fullWidth required onChange={(e) => setUser({ ...user, password: e.target.value })} />
           <TextField label="ยืนยันรหัสผ่าน" type="password" variant="outlined" fullWidth required onChange={(e) => setUser({ ...user, confirmPassword: e.target.value })} />
