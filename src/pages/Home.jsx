@@ -1,5 +1,5 @@
-// Homepage.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Box,
   Typography,
@@ -8,6 +8,8 @@ import {
   Grid,
   Container,
   CardMedia,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import { styled } from '@mui/system';
 
@@ -40,13 +42,79 @@ const Footer = styled(Box)(({ theme }) => ({
 }));
 
 const Homepage = () => {
-  // กำหนดห้องทั้งหมดให้เป็นสถานะ available
-  const rooms = [
-    { id: 1, name: 'CO-WORKING', status: 'available' },
-    { id: 2, name: 'Operating Systems', status: 'available' },
-    { id: 3, name: 'Data Management Systems', status: 'available' },
-    { id: 4, name: 'Computer Room & Control Systems', status: 'available' },
-  ];
+  const [rooms, setRooms] = useState([]);  // เก็บข้อมูลห้อง
+  const [role, setRole] = useState('guest');  // เก็บ role, ค่าเริ่มต้นคือ guest
+  const [loading, setLoading] = useState(true); // ใช้สำหรับสถานะการโหลด
+  const [error, setError] = useState(null); // เก็บข้อความข้อผิดพลาด
+
+  // ดึงข้อมูลของผู้ใช้และ role เมื่อเพจโหลด
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await axios.get('/api/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          setRole(response.data.role);
+        }
+      } catch (error) {
+        console.error("ไม่สามารถดึงข้อมูลผู้ใช้ได้:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
+
+  // ดึงข้อมูลห้องจาก API
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const response = await axios.get('http://localhost:4999/api/admin/rooms', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`, // ส่ง token หากมี
+          },
+        });
+        setRooms(response.data);  // เก็บข้อมูลห้องใน state
+      } catch (error) {
+        console.error("ไม่สามารถดึงข้อมูลห้องได้:", error);
+        setError("ไม่สามารถดึงข้อมูลห้องได้");
+      } finally {
+        setLoading(false); // สถานะโหลดเสร็จสิ้น
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
+  // ฟังก์ชันเพื่อจัดการสถานะของห้อง
+  const handleStatusChange = async (roomId, status) => {
+    try {
+      setRooms((prevRooms) =>
+        prevRooms.map((room) =>
+          room._id === roomId ? { ...room, status } : room
+        )
+      );
+
+      const response = await axios.patch(`/api/admin/rooms/${roomId}`, { status }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // ส่ง token หากมี
+        },
+      });
+
+      setRooms((prevRooms) =>
+        prevRooms.map((room) =>
+          room._id === roomId ? { ...room, status: response.data.status } : room
+        )
+      );
+    } catch (error) {
+      console.error("ไม่สามารถอัพเดตสถานะห้องได้:", error);
+    }
+  };
 
   return (
     <Box
@@ -58,54 +126,81 @@ const Homepage = () => {
       }}
     >
       <Container sx={{ flexGrow: 1, py: 4 }}>
-        <Grid container spacing={4}>
-          {rooms.map((room) => (
-            <Grid item xs={12} sm={6} key={room.id}>
-              <RoomCard status={room.status}>
+        {loading ? (
+          <Typography variant="h6" align="center">
+            กำลังโหลดข้อมูล...
+          </Typography>
+        ) : error ? (
+          <Typography variant="h6" color="error" align="center">
+            {error}
+          </Typography>
+        ) : (
+          <Grid container spacing={4}>
+            {rooms.map((room) => (
+              <Grid item xs={12} sm={6} key={room._id}>
+                <RoomCard status={room.status}>
                 <CardMedia
-                  component="img"
-                  height="140"
-                  image="src/images/co-working.jpeg"
-                  alt={`${room.name} Image`}
-                />
-                <CardContent
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                  }}
-                >
-                  <Typography
-                    variant="h5"
+                    component="img"
+                    height="140"
+                    image={`http://localhost:4999/uploads/${room.image}`}
+                    alt={`${room.name} Image`}
+                  />
+                  <CardContent
                     sx={{
-                      textAlign: 'center',
-                      fontWeight: 'bold',
-                      color:
-                        room.status === 'available'
-                          ? 'success.main'
-                          : 'error.main',
-                      mb: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
                     }}
                   >
-                    {room.name}
-                  </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        color:
+                          room.status === 'available'
+                            ? 'success.main'
+                            : 'error.main',
+                        mb: 2,
+                      }}
+                    >
+                      {room.name}
+                    </Typography>
 
-                  <Typography
-                    variant="body1"
-                    sx={{ textAlign: 'center', mb: 1 }}
-                  >
-                    ห้องนี้ว่าง
-                  </Typography>
-                </CardContent>
-              </RoomCard>
-            </Grid>
-          ))}
-        </Grid>
+                    <Typography variant="body1" sx={{ textAlign: 'center', mb: 1 }}>
+                      ห้องนี้ {room.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}
+                    </Typography>
+
+                    {/* แสดงปุ่มเปิด/ปิด เมื่อเป็น admin เท่านั้น */}
+                    {role === 'admin' && (
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={room.status === 'available'}
+                            onChange={() =>
+                              handleStatusChange(
+                                room._id,
+                                room.status === 'available' ? 'unavailable' : 'available'
+                              )
+                            }
+                            color="primary"
+                          />
+                        }
+                        label="เปิด/ปิด"
+                        sx={{ textAlign: 'center' }}
+                      />
+                    )}
+                  </CardContent>
+                </RoomCard>
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </Container>
 
       <Footer>
         <Typography variant="body2">
-          © {new Date().getFullYear()} CE-ระบบปฏิบัติการ
+          {role === 'guest' ? 'คุณยังไม่ได้ล็อกอิน' : `ผู้ใช้: ${role}`}
         </Typography>
       </Footer>
     </Box>
