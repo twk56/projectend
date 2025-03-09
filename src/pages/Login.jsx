@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../api"; // ฟังก์ชันเชื่อมต่อ Backend
+import { loginUser } from "../api";
 import {
   Box,
   Container,
@@ -26,7 +26,8 @@ const Login = () => {
 
     try {
       const response = await loginUser({ studentId, password });
-      localStorage.setItem("token", response.data.token); // ✅ เก็บ Token
+      console.log("✅ Login Success! Token:", response.data.token);
+      localStorage.setItem("token", response.data.token);
       alert("✅ เข้าสู่ระบบสำเร็จ!");
       navigate("/");
 
@@ -45,19 +46,19 @@ const Login = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(to right, #1c92d2, #f2fcfe)", // พื้นหลังสีฟ้าสบายตา
+        background: "linear-gradient(to right, #1c92d2, #f2fcfe)", 
       }}
     >
       <Container
-        maxWidth="xs"  // ทำให้ฟอร์มกว้างไม่เกินขนาดมือถือ
+        maxWidth="xs"
         sx={{
           p: 4,
           borderRadius: "12px",
           boxShadow: 4,
           backgroundColor: "#fff",
           textAlign: "center",
-          width: "100%",  // รองรับมือถือได้ดีขึ้น
-          maxWidth: "400px", // กำหนดขนาดสูงสุดสำหรับมือถือ
+          width: "100%",
+          maxWidth: "400px",
         }}
       >
         <Typography variant="h5" fontWeight="bold" color="primary" mb={2}>
@@ -77,7 +78,7 @@ const Login = () => {
             onChange={(e) => setStudentId(e.target.value)}
             variant="outlined"
             sx={{
-              mb: 2, // เพิ่มระยะห่างระหว่างฟิลด์
+              mb: 2,
             }}
           />
           <TextField
@@ -90,7 +91,7 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             variant="outlined"
             sx={{
-              mb: 2, // เพิ่มระยะห่างระหว่างฟิลด์
+              mb: 2,
             }}
           />
           <Button

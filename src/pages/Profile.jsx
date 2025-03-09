@@ -3,7 +3,6 @@ import { getProfile } from "../api"; // เรียกใช้ API
 import { Container, Typography, Box, Paper, Avatar } from "@mui/material";
 import { styled } from "@mui/system";
 
-// ปรับแต่ง Container
 const ProfileContainer = styled(Container)({
   display: "flex",
   flexDirection: "column",
@@ -23,7 +22,7 @@ const Profile = () => {
       const token = localStorage.getItem("token");
       if (!token) {
         alert("กรุณาเข้าสู่ระบบก่อน");
-        window.location.href = "/login"; // ส่งกลับไปหน้า Login
+        window.location.href = "/login";
         return;
       }
 
@@ -32,7 +31,7 @@ const Profile = () => {
         setProfile({
           email: response.data.email,
           studentId: response.data.studentId,
-          profileImage: response.data.profileImage, // รับข้อมูลรูปโปรไฟล์จาก API
+          profileImage: response.data.profileImage,
         });
       } catch (error) {
         alert("เกิดข้อผิดพลาดในการโหลดข้อมูลโปรไฟล์");

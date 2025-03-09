@@ -11,6 +11,7 @@ import {
   CardMedia,
   Switch,
   FormControlLabel,
+  Button,
 } from '@mui/material';
 import { styled } from '@mui/system';
 
@@ -20,9 +21,7 @@ const RoomCard = styled(Card)(({ theme, status }) => ({
   justifyContent: 'space-between',
   borderRadius: '12px',
   border: `1px solid ${
-    status === 'available'
-      ? theme.palette.success.main
-      : theme.palette.error.main
+    status === 'available' ? theme.palette.success.main : theme.palette.error.main
   }`,
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
   backgroundColor: status === 'available' ? '#e8f5e9' : '#ffebee',
@@ -42,8 +41,7 @@ const Footer = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(4),
 }));
 
-const Homepage = () => {
-  // State สำหรับห้องและ booking
+const Home = () => {
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
   const navigate = useNavigate();
@@ -52,7 +50,6 @@ const Homepage = () => {
   const [error, setError] = useState(null);
   const [bookingError, setBookingError] = useState(null);
 
-  // ดึงข้อมูลผู้ใช้ (role)
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
@@ -64,7 +61,7 @@ const Homepage = () => {
           setRole(response.data.role);
         }
       } catch (error) {
-        console.error("ไม่สามารถดึงข้อมูลผู้ใช้ได้:", error);
+        console.error('ไม่สามารถดึงข้อมูลผู้ใช้ได้:', error);
       } finally {
         setLoading(false);
       }
@@ -72,7 +69,6 @@ const Homepage = () => {
     fetchUserRole();
   }, []);
 
-  // ดึงข้อมูลห้อง
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -82,8 +78,8 @@ const Homepage = () => {
         });
         setRooms(response.data);
       } catch (error) {
-        console.error("ไม่สามารถดึงข้อมูลห้องได้:", error);
-        setError("ไม่สามารถดึงข้อมูลห้องได้");
+        console.error('ไม่สามารถดึงข้อมูลห้องได้:', error);
+        setError('ไม่สามารถดึงข้อมูลห้องได้');
       } finally {
         setLoading(false);
       }
@@ -91,24 +87,19 @@ const Homepage = () => {
     fetchRooms();
   }, []);
 
-  // ดึงข้อมูลการจอง
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:4999/api/admin/bookings', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get('http://localhost:4999/api/bookings');
         setBookings(response.data);
       } catch (error) {
-        console.error("ไม่สามารถดึงข้อมูลการจองได้:", error);
-        setBookingError("ไม่สามารถดึงข้อมูลการจองได้");
+        console.error('ไม่สามารถดึงข้อมูลการจองได้:', error);
+        setBookingError('ไม่สามารถดึงข้อมูลการจองได้');
       }
     };
     fetchBookings();
   }, []);
 
-  // ฟังก์ชันอัปเดตสถานะห้อง
   const handleStatusChange = async (roomId, status) => {
     try {
       setRooms((prevRooms) =>
@@ -116,7 +107,6 @@ const Homepage = () => {
           room._id === roomId ? { ...room, status } : room
         )
       );
-
       const response = await axios.patch(
         `http://localhost:4999/api/admin/rooms/${roomId}`,
         { status },
@@ -124,15 +114,36 @@ const Homepage = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         }
       );
-
       setRooms((prevRooms) =>
         prevRooms.map((room) =>
           room._id === roomId ? { ...room, status: response.data.status } : room
         )
       );
     } catch (error) {
-      console.error("ไม่สามารถอัพเดตสถานะห้องได้:", error);
+      console.error('ไม่สามารถอัพเดตสถานะห้องได้:', error);
     }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?')) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:4999/api/bookings/${bookingId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setBookings((prevBookings) =>
+          prevBookings.filter((booking) => booking._id !== bookingId)
+        );
+        alert('ยกเลิกการจองสำเร็จ');
+      } catch (error) {
+        console.error('ไม่สามารถยกเลิกการจองได้:', error);
+        alert('เกิดข้อผิดพลาดในการยกเลิกการจอง');
+      }
+    }
+  };
+
+  const handleViewDetails = (bookingId) => {
+    navigate(`/booking-details/${bookingId}`);
   };
 
   return (
@@ -156,24 +167,39 @@ const Homepage = () => {
         ) : (
           <Grid container spacing={4}>
             {rooms.map((room) => {
-              // หา booking ที่ตรงกับห้องนี้ (โดยเปรียบเทียบ room.name กับ booking.room)
               const bookingOfThisRoom = bookings.find((b) => b.room === room.name);
-              const isRoomAvailable = room.status === 'available';
+              // const isRoomAvailable = !bookings.some((b) => b.room === room.name);
+              const isRoomAvailable = !bookingOfThisRoom;
+              // const isRoomAvailable = room.status === 'available';
+
               return (
                 <Grid item xs={12} sm={6} key={room._id}>
                   <RoomCard status={room.status}>
-                  <CardMedia
+                    <CardMedia
                       component="img"
                       height="140"
                       image={`http://localhost:4999/uploads/${room.image}`}
                       alt={`${room.name} Image`}
                       onClick={() => {
-                        // ตรวจสอบ role ก่อนที่จะนำไปยังหน้า booking
-                        if (role !== 'user' && role !== 'admin' || !isRoomAvailable) {
-                          alert('คุณต้องล็อกอินเป็นผู้ใช้หรือผู้ดูแล และห้องต้องว่างก่อน');
+                        if (role !== 'user' && role !== 'admin') {
+                          alert('คุณต้องล็อกอินเป็นผู้ใช้หรือผู้ดูแล');
                           return;
                         }
-                        navigate(`/Booking`); // นำทางไปยังหน้า booking
+                        if (!isRoomAvailable) {
+                          alert('ห้องนี้ไม่ว่าง');
+                          return;
+                        }
+                        navigate('/booking');
+                      }}
+                      sx={{
+                        pointerEvents:
+                          (role !== 'user' && role !== 'admin') || !isRoomAvailable
+                            ? 'none'
+                            : 'auto',
+                        opacity:
+                          (role !== 'user' && role !== 'admin') || !isRoomAvailable
+                            ? 0.5
+                            : 1,
                       }}
                     />
                     <CardContent
@@ -184,17 +210,13 @@ const Homepage = () => {
                         sx={{
                           textAlign: 'center',
                           fontWeight: 'bold',
-                          color: room.status === 'available' ? 'success.main' : 'error.main',
-                          mb: 2,
+                          color: isRoomAvailable ? 'success.main' : 'error.main',
+                          opacity: isRoomAvailable ? 1 : 0.5,
                         }}
                       >
                         {room.name}
                       </Typography>
-                      <Typography variant="body1" sx={{ textAlign: 'center', mb: 1 }}>
-                        ห้องนี้ {room.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}
-                      </Typography>
 
-                      {/* แสดงข้อมูลการจอง ถ้ามีการจอง */}
                       {bookingOfThisRoom ? (
                         <Box
                           sx={{
@@ -208,23 +230,40 @@ const Homepage = () => {
                             ข้อมูลการจอง
                           </Typography>
                           <Typography variant="body2">
-                            ชื่อผู้จอง: {bookingOfThisRoom.name}
+                            ผู้จอง: {bookingOfThisRoom.user.studentId}
                           </Typography>
                           <Typography variant="body2">
-                            รหัสห้อง: {bookingOfThisRoom.roomCode}
+                            เริ่ม: {new Date(bookingOfThisRoom.startTime).toLocaleString('th-TH')}
                           </Typography>
                           <Typography variant="body2">
-                            เวลาจอง: {new Date(bookingOfThisRoom.bookingTime).toLocaleString()}
+                            สิ้นสุด: {new Date(bookingOfThisRoom.endTime).toLocaleString('th-TH')}
                           </Typography>
+                          <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => handleViewDetails(bookingOfThisRoom._id)}
+                            >
+                              ดูรายละเอียด
+                            </Button>
+                            {(role === 'user' || role === 'admin') && (
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                onClick={() => handleCancelBooking(bookingOfThisRoom._id)}
+                              >
+                                ยกเลิกการจอง
+                              </Button>
+                            )}
+                          </Box>
                         </Box>
                       ) : (
-                        // ถ้าไม่มีการจอง คุณสามารถเลือกที่จะแสดงข้อความ หรือปล่อยว่างไว้ก็ได้
                         <Typography variant="body2" sx={{ textAlign: 'center', mt: 1 }}>
                           ยังไม่มีการจอง
                         </Typography>
                       )}
 
-                      {/* แสดงสวิตช์สถานะห้อง เมื่อเป็น admin */}
                       {role === 'admin' && (
                         <FormControlLabel
                           control={
@@ -233,9 +272,7 @@ const Homepage = () => {
                               onChange={() =>
                                 handleStatusChange(
                                   room._id,
-                                  room.status === 'available'
-                                    ? 'unavailable'
-                                    : 'available'
+                                  room.status === 'available' ? 'unavailable' : 'available'
                                 )
                               }
                               color="primary"
@@ -254,7 +291,6 @@ const Homepage = () => {
         )}
       </Container>
 
-      {/* แสดง error การดึง bookings ถ้ามี */}
       {bookingError && (
         <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
           {bookingError}
@@ -270,4 +306,4 @@ const Homepage = () => {
   );
 };
 
-export default Homepage;
+export default Home;

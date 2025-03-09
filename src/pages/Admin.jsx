@@ -9,21 +9,17 @@ const Admin = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // สมมุติว่าข้อมูลของผู้ใช้และสถานะได้รับการตรวจสอบจากด้านนอกแล้ว
     setLoggedInUser("Admin");
     setStatus("ออนไลน์");
 
-    // ฟังก์ชันสำหรับดึงข้อมูลจาก backend API
     const fetchStats = async () => {
       try {
         console.log("Fetch URL:", "http://localhost:4999/api/admin/stats");
-        // เปลี่ยน URL จาก /api/users/stats เป็น /api/admin/stats ให้ตรงกับที่ backend กำหนดไว้
         const response = await fetch("http://localhost:4999/api/admin/stats");
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
         const data = await response.json();
-        // สมมุติว่า API ส่งข้อมูลในรูปแบบ { totalUsers: number, loginCount: number }
         setTotalUsers(data.totalUsers);
         setLoginCount(data.loginCount);
         setLoading(false);
@@ -64,7 +60,6 @@ const Admin = () => {
           <p>สถานะการเข้าใช้งาน: {status}</p>
           <p>จำนวนผู้ใช้ในระบบ: {totalUsers} คน</p>
           <p>จำนวนผู้ที่เคยเข้าใช้งาน: {loginCount} คน</p>
-          {/* เพิ่มฟังก์ชันหรือคอมโพเนนต์อื่นๆ ที่ต้องการ */}
         </section>
       </main>
     </div>

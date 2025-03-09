@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Box,
@@ -37,37 +37,49 @@ const StyledContainer = styled(Container)(({ theme }) => ({
 }));
 
 const Booking = () => {
-  const availableRooms = [
-    'CO-WORKING',
-    'Operating Systems',
-    'Data Management Systems',
-    'Computer Room & Control Systems',
-  ];
   const { roomId } = useParams();
+  const navigate = useNavigate();
   const [room, setRoom] = useState('');
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
-  const [duration, setDuration] = useState('');
+  const [availableRooms, setAvailableRooms] = useState([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const minTime = dayjs().tz('Asia/Bangkok').set('hour', 0).set('minute', 0);
   const maxTime = dayjs().tz('Asia/Bangkok').set('hour', 23).set('minute', 59);
 
   useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:4999/api/admin/rooms', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const available = response.data.filter((r) => r.status === 'available');
+        setAvailableRooms(available);
+      } catch (error) {
+        console.error('ไม่สามารถดึงข้อมูลห้องได้:', error);
+        setError('ไม่สามารถดึงข้อมูลห้องจากฐานข้อมูลได้');
+      }
+    };
+    fetchRooms();
+  }, []);
+
+  useEffect(() => {
     const fetchRoomDetails = async () => {
       if (roomId) {
-      try {
-        const response = await axios.get(`http://localhost:4999/api/rooms/${roomId}`);
-        setRoom(response.data);
-      } catch (error) {
-        setError('ไม่สามารถดึงข้อมูลห้องได้');
-      }
+        try {
+          const response = await axios.get(`http://localhost:4999/api/rooms/${roomId}`);
+          setRoom(response.data.name);
+        } catch (error) {
+          setError('ไม่สามารถดึงข้อมูลห้องได้');
+        }
       }
     };
     fetchRoomDetails();
   }, [roomId]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
@@ -82,20 +94,23 @@ const Booking = () => {
       return;
     }
 
-    // คำนวณระยะเวลา
-    const durationMinutes = endTime.diff(startTime, 'minute');
-    const durationString = `${durationMinutes} นาที`;
-    setDuration(durationString);
+    const bookingData = {
+      room,
+      startTime: startTime.format('YYYY-MM-DD HH:mm'),
+      endTime: endTime.format('YYYY-MM-DD HH:mm'),
+    };
 
-    // แสดงผลเวลาในรูปแบบที่ง่ายขึ้น
-    const startTimeString = startTime.format('HH:mm [น.]');
-    const endTimeString = endTime.format('HH:mm [น.]');
-    setMessage(`จองห้อง "${room}" เรียบร้อยแล้ว ตั้งแต่เวลา ${startTimeString} ถึง ${endTimeString} ใช้งาน ${durationString}`);
-
-    // รีเซ็ตฟอร์ม
-    setRoom('');
-    setStartTime(null);
-    setEndTime(null);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:4999/api/bookings', bookingData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("✅ Booking response:", response.data);
+      setMessage(response.data.message);
+      setTimeout(() => navigate('/'), 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการจอง');
+    }
   };
 
   return (
@@ -114,19 +129,10 @@ const Booking = () => {
           จองห้อง
         </Typography>
 
-        {message && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {message}
-          </Alert>
-        )}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+        {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         <form onSubmit={handleSubmit}>
-          {/* เลือกห้อง */}
           <TextField
             select
             label="เลือกห้อง (ที่ว่าง)"
@@ -136,14 +142,17 @@ const Booking = () => {
             margin="normal"
             required
           >
-            {availableRooms.map((r) => (
-              <MenuItem key={r} value={r}>
-                {r}
-              </MenuItem>
-            ))}
+            {availableRooms.length > 0 ? (
+              availableRooms.map((r) => (
+                <MenuItem key={r._id} value={r.name}>
+                  {r.name}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>ไม่มีห้องว่าง</MenuItem>
+            )}
           </TextField>
 
-          {/* เลือกเวลาเริ่มต้น */}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <TimePicker
               label="เวลาเริ่มต้น"
@@ -151,12 +160,11 @@ const Booking = () => {
               onChange={(newValue) => setStartTime(newValue)}
               minTime={minTime}
               maxTime={maxTime}
-              ampm={false}  // ปิด AM/PM, ใช้ 24 ชั่วโมง
+              ampm={false}
               renderInput={(params) => <TextField {...params} fullWidth margin="normal" required />}
             />
           </LocalizationProvider>
 
-          {/* เลือกเวลาเสร็จสิ้น */}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <TimePicker
               label="เวลาเสร็จสิ้น"
@@ -164,19 +172,10 @@ const Booking = () => {
               onChange={(newValue) => setEndTime(newValue)}
               minTime={startTime || minTime}
               maxTime={maxTime}
-              ampm={false}  // ปิด AM/PM, ใช้ 24 ชั่วโมง
+              ampm={false}
               renderInput={(params) => <TextField {...params} fullWidth margin="normal" required />}
             />
           </LocalizationProvider>
-
-          {/* แสดงระยะเวลาที่คำนวณได้ */}
-          <TextField
-            label="ระยะเวลา"
-            value={duration}
-            fullWidth
-            margin="normal"
-            disabled
-          />
 
           <Button
             type="submit"

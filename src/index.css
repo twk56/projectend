@@ -1,15 +1,14 @@
-/* styles.css */
 html, body, #root {
   margin: 0;
   padding: 0;
-  height: 100%; /* ทำให้ HTML และ Body สูงเต็มหน้าจอ */
+  height: 100%; 
 }
 
 body {
-  font-family: 'Roboto', sans-serif; /* ใช้ฟอนต์มาตรฐานจาก MUI */
-  background-color: #f0f0f0; /* สีพื้นหลังที่ดูสะอาด */
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f0f0;
 }
 
 * {
-  box-sizing: border-box; /* ช่วยจัดระเบียบการคำนวณขนาดองค์ประกอบ */
+  box-sizing: border-box;
 }
