@@ -21,18 +21,17 @@ import MenuIcon from "@mui/icons-material/Menu";
 import LoginIcon from "@mui/icons-material/Login";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import BookIcon from "@mui/icons-material/Book";
+import ListIcon from "@mui/icons-material/List"; // เพิ่มไอคอนสำหรับรายการการจอง
 import PersonIcon from "@mui/icons-material/Person";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 
-// ฟังก์ชันซ่อน Navbar เมื่อเลื่อนลง
 function HideOnScroll(props) {
   const { children } = props;
   const trigger = useScrollTrigger();
   return <Slide appear={false} direction="down" in={!trigger}>{children}</Slide>;
 }
 
-// ปรับแต่ง Navbar
 const StyledAppBar = styled(AppBar)({
   backgroundColor: "#FFFFFF",
   boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
@@ -44,7 +43,6 @@ const StyledAppBar = styled(AppBar)({
   },
 });
 
-// ปรับแต่งโลโก้
 const Logo = styled(Typography)({
   flexGrow: 1,
   fontWeight: "bold",
@@ -54,7 +52,6 @@ const Logo = styled(Typography)({
   cursor: "pointer",
 });
 
-// ปุ่มเมนูเดสก์ท็อป
 const NavButton = styled(Button)({
   marginLeft: "16px",
   marginRight: "16px",
@@ -68,7 +65,6 @@ const NavButton = styled(Button)({
   },
 });
 
-// ปรับแต่งปุ่มเมนูมือถือให้มองเห็นชัดขึ้น
 const MobileMenuButton = styled(IconButton)({
   display: "none",
   "@media (max-width: 1024px)": {
@@ -77,7 +73,6 @@ const MobileMenuButton = styled(IconButton)({
   },
 });
 
-// ซ่อนเมนูเดสก์ท็อปบนมือถือ
 const DesktopMenu = styled(Box)({
   display: "flex",
   alignItems: "center",
@@ -92,18 +87,23 @@ const Navbar = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  // ตรวจสอบสถานะการล็อกอิน
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
-    if (token) {
+    
+    if (token && token.split(".").length === 3) {
       try {
         const decoded = jwtDecode(token);
+        setIsLoggedIn(true);
         setIsAdmin(decoded.role === "admin");
       } catch (error) {
         console.error("ไม่สามารถถอดรหัส token ได้:", error);
+        setIsLoggedIn(false);
         setIsAdmin(false);
       }
+    } else {
+      console.warn("Token ไม่มีหรือรูปแบบไม่ถูกต้อง:", token);
+      setIsLoggedIn(false);
+      setIsAdmin(false);
     }
   }, []);
 
@@ -130,6 +130,9 @@ const Navbar = () => {
                 <>
                   <NavButton component={Link} to="/booking" startIcon={<BookIcon />}>
                     ห้อง
+                  </NavButton>
+                  <NavButton component={Link} to="/bookings" startIcon={<ListIcon />}>
+                    รายการการจอง
                   </NavButton>
                   {isAdmin && (
                     <NavButton component={Link} to="/admin" startIcon={<AdminPanelSettingsIcon />}>
@@ -188,6 +191,10 @@ const Navbar = () => {
                 <ListItem button component={Link} to="/booking">
                   <ListItemIcon><BookIcon /></ListItemIcon>
                   <ListItemText primary="จองห้อง" />
+                </ListItem>
+                <ListItem button component={Link} to="/bookings">
+                  <ListItemIcon><ListIcon /></ListItemIcon>
+                  <ListItemText primary="รายการการจอง" />
                 </ListItem>
                 {isAdmin && (
                   <ListItem button component={Link} to="/admin">

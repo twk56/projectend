@@ -14,6 +14,15 @@ import {
   Button,
 } from '@mui/material';
 import { styled } from '@mui/system';
+import dayjs from 'dayjs';
+import 'dayjs/locale/th';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale('th');
+dayjs.tz.setDefault('Asia/Bangkok');
 
 const RoomCard = styled(Card)(({ theme, status }) => ({
   display: 'flex',
@@ -46,6 +55,7 @@ const Home = () => {
   const [bookings, setBookings] = useState([]);
   const navigate = useNavigate();
   const [role, setRole] = useState('guest');
+  const [userId, setUserId] = useState(null); // เพิ่ม state สำหรับ userId
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bookingError, setBookingError] = useState(null);
@@ -54,14 +64,26 @@ const Home = () => {
     const fetchUserRole = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (token) {
-          const response = await axios.get('/api/profile', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setRole(response.data.role);
+        console.log('🔍 Token:', token);
+
+        if (!token) {
+          console.log('⚠️ ไม่พบ token ใน localStorage');
+          setRole('guest');
+          return;
         }
+
+        const response = await axios.get('http://localhost:4999/api/profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('✅ Response from /api/profile:', response.data);
+
+        const userRole = response.data.role || 'guest';
+        setRole(userRole);
+        setUserId(response.data._id); // ตั้งค่า userId จาก response
+        console.log('👤 Role set to:', userRole, 'User ID:', response.data._id);
       } catch (error) {
-        console.error('ไม่สามารถดึงข้อมูลผู้ใช้ได้:', error);
+        console.error('🔴 Error fetching user role:', error.response?.data || error.message);
+        setRole('guest');
       } finally {
         setLoading(false);
       }
@@ -90,7 +112,10 @@ const Home = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await axios.get('http://localhost:4999/api/bookings');
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:4999/api/bookings', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setBookings(response.data);
       } catch (error) {
         console.error('ไม่สามารถดึงข้อมูลการจองได้:', error);
@@ -146,6 +171,12 @@ const Home = () => {
     navigate(`/booking-details/${bookingId}`);
   };
 
+  // ฟังก์ชันตรวจสอบว่าห้องยังถูกล็อคอยู่หรือไม่
+  const isBookingActive = (booking) => {
+    const now = dayjs();
+    return now.isBefore(dayjs(booking.endTime));
+  };
+
   return (
     <Box
       sx={{
@@ -168,9 +199,8 @@ const Home = () => {
           <Grid container spacing={4}>
             {rooms.map((room) => {
               const bookingOfThisRoom = bookings.find((b) => b.room === room.name);
-              // const isRoomAvailable = !bookings.some((b) => b.room === room.name);
-              const isRoomAvailable = !bookingOfThisRoom;
-              // const isRoomAvailable = room.status === 'available';
+              const isRoomLocked = bookingOfThisRoom && isBookingActive(bookingOfThisRoom);
+              const isRoomAvailable = !isRoomLocked && room.status === 'available';
 
               return (
                 <Grid item xs={12} sm={6} key={room._id}>
@@ -185,6 +215,10 @@ const Home = () => {
                           alert('คุณต้องล็อกอินเป็นผู้ใช้หรือผู้ดูแล');
                           return;
                         }
+                        if (room.status === 'unavailable') {
+                          alert('ห้องนี้ถูกปิด ไม่สามารถจองได้');
+                          return;
+                        }
                         if (!isRoomAvailable) {
                           alert('ห้องนี้ไม่ว่าง');
                           return;
@@ -193,11 +227,15 @@ const Home = () => {
                       }}
                       sx={{
                         pointerEvents:
-                          (role !== 'user' && role !== 'admin') || !isRoomAvailable
+                          (role !== 'user' && role !== 'admin') ||
+                          room.status === 'unavailable' ||
+                          !isRoomAvailable
                             ? 'none'
                             : 'auto',
                         opacity:
-                          (role !== 'user' && role !== 'admin') || !isRoomAvailable
+                          (role !== 'user' && role !== 'admin') ||
+                          room.status === 'unavailable' ||
+                          !isRoomAvailable
                             ? 0.5
                             : 1,
                       }}
@@ -230,13 +268,17 @@ const Home = () => {
                             ข้อมูลการจอง
                           </Typography>
                           <Typography variant="body2">
-                            ผู้จอง: {bookingOfThisRoom.user.studentId}
+                            ชื่อผู้จอง: {bookingOfThisRoom.user?.fullName || 'ไม่ระบุ'}
                           </Typography>
                           <Typography variant="body2">
-                            เริ่ม: {new Date(bookingOfThisRoom.startTime).toLocaleString('th-TH')}
+                            รหัสนักศึกษา: {bookingOfThisRoom.user?.studentId || 'ไม่ระบุ'}
                           </Typography>
                           <Typography variant="body2">
-                            สิ้นสุด: {new Date(bookingOfThisRoom.endTime).toLocaleString('th-TH')}
+                            เวลา: {dayjs(bookingOfThisRoom.startTime).format('HH:mm')} ถึง{' '}
+                            {dayjs(bookingOfThisRoom.endTime).format('HH:mm')}
+                          </Typography>
+                          <Typography variant="body2">
+                            วันที่: {dayjs(bookingOfThisRoom.startTime).format('DD MMMM YYYY')}
                           </Typography>
                           <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
                             <Button
@@ -246,7 +288,8 @@ const Home = () => {
                             >
                               ดูรายละเอียด
                             </Button>
-                            {(role === 'user' || role === 'admin') && (
+                            {(role === 'admin' || 
+                              (role === 'user' && bookingOfThisRoom.user?._id === userId)) && (
                               <Button
                                 variant="outlined"
                                 color="error"
@@ -260,7 +303,7 @@ const Home = () => {
                         </Box>
                       ) : (
                         <Typography variant="body2" sx={{ textAlign: 'center', mt: 1 }}>
-                          ยังไม่มีการจอง
+                          {room.status === 'unavailable' ? 'ห้องนี้ถูกปิด' : 'ยังไม่มีการจอง'}
                         </Typography>
                       )}
 
@@ -278,7 +321,7 @@ const Home = () => {
                               color="primary"
                             />
                           }
-                          label="เปิด/ปิด"
+                          label={room.status === 'available' ? 'เปิด' : 'ปิด'}
                           sx={{ textAlign: 'center', mt: 2 }}
                         />
                       )}
@@ -299,7 +342,7 @@ const Home = () => {
 
       <Footer>
         <Typography variant="body2">
-          {role === 'guest' ? 'คุณยังไม่ได้ล็อกอิน' : `ผู้ใช้: ${role}`}
+          ผู้ใช้: {role}
         </Typography>
       </Footer>
     </Box>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { getProfile } from "../api"; // เรียกใช้ API
-import { Container, Typography, Box, Paper, Avatar } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { getProfile } from "../api";
+import { Container, Typography, Box, Paper } from "@mui/material";
 import { styled } from "@mui/system";
 
 const ProfileContainer = styled(Container)({
@@ -12,35 +13,39 @@ const ProfileContainer = styled(Container)({
 
 const Profile = () => {
   const [profile, setProfile] = useState({
+    fullName: "",
     email: "",
     studentId: "",
-    profileImage: "",
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
+      console.log("Token:", token);
       if (!token) {
         alert("กรุณาเข้าสู่ระบบก่อน");
-        window.location.href = "/login";
+        navigate("/login");
         return;
       }
-
+  
       try {
-        const response = await getProfile(token);
+        const response = await getProfile();
+        console.log("Profile data received:", response);
         setProfile({
-          email: response.data.email,
-          studentId: response.data.studentId,
-          profileImage: response.data.profileImage,
+          fullName: response.data.fullName || "",
+          email: response.data.email || "",
+          studentId: response.data.studentId || "",
         });
       } catch (error) {
+        console.error("Error fetching profile:", error.response?.data || error);
         alert("เกิดข้อผิดพลาดในการโหลดข้อมูลโปรไฟล์");
-        console.error(error);
+        navigate("/login");
       }
     };
-
+  
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   return (
     <ProfileContainer maxWidth="sm">
@@ -48,12 +53,9 @@ const Profile = () => {
         <Typography variant="h4" gutterBottom>
           โปรไฟล์ของคุณ
         </Typography>
-        {/* แสดงรูปโปรไฟล์ */}
-        <Avatar
-          src={profile.profileImage || "/default-avatar.png"}
-          sx={{ width: 100, height: 100, margin: "auto" }}
-        />
+
         <Box sx={{ marginTop: 3, textAlign: "left", width: "100%" }}>
+          <Typography variant="h6">ชื่อ-นามสกุล: {profile.fullName}</Typography>
           <Typography variant="h6">อีเมล: {profile.email}</Typography>
           <Typography variant="h6">รหัสนักศึกษา: {profile.studentId}</Typography>
         </Box>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { bookRoom } from '../api';
+import { jwtDecode } from 'jwt-decode';
 import {
   Box,
   Typography,
@@ -13,6 +14,7 @@ import { styled } from '@mui/system';
 import { MenuItem } from '@mui/material';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import utc from 'dayjs/plugin/utc';
@@ -94,21 +96,27 @@ const Booking = () => {
       return;
     }
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('กรุณาเข้าสู่ระบบก่อน');
+      navigate('/login');
+      return;
+    }
+
     const bookingData = {
-      room,
-      startTime: startTime.format('YYYY-MM-DD HH:mm'),
-      endTime: endTime.format('YYYY-MM-DD HH:mm'),
+      room: room,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
     };
+    console.log("Booking data being sent:", bookingData);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:4999/api/bookings', bookingData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await bookRoom(bookingData);
       console.log("✅ Booking response:", response.data);
       setMessage(response.data.message);
       setTimeout(() => navigate('/'), 2000);
     } catch (err) {
+      console.error("Booking error:", err.response?.data || err);
       setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการจอง');
     }
   };

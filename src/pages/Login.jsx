@@ -9,36 +9,91 @@ import {
   Button,
   Alert,
   Link,
-  CircularProgress
+  CircularProgress,
+  Paper,
+  Fade,
 } from "@mui/material";
+import { styled } from "@mui/material/styles";
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(4),
+  borderRadius: theme.spacing(2),
+  background: theme.palette.background.paper,
+  boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+  width: "100%",
+  maxWidth: "400px",
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  padding: theme.spacing(1.5),
+  fontSize: "1rem",
+  fontWeight: 600,
+  borderRadius: theme.spacing(1),
+  textTransform: "none",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    transition: "all 0.2s ease-in-out",
+  },
+}));
 
 const Login = () => {
-  const [studentId, setStudentId] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    studentId: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({});
+  const [status, setStatus] = useState({
+    loading: false,
+    error: "",
+  });
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const validateForm = () => {
+    const newErrors = {};
 
-    try {
-      const response = await loginUser({ studentId, password });
-      console.log("✅ Login Success! Token:", response.data.token);
-      localStorage.setItem("token", response.data.token);
-      alert("✅ เข้าสู่ระบบสำเร็จ!");
-      navigate("/");
+    if (!formData.studentId || typeof formData.studentId !== "string" || !formData.studentId.trim()) 
+      newErrors.studentId = "กรุณากรอกรหัสนักศึกษา";
+    if (!formData.password || formData.password.length < 6) 
+      newErrors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
 
-      setTimeout(() => window.location.reload(), 100);
-    } catch (error) {
-      setError(error.response?.data?.error || "❌ รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง");
-    } finally {
-      setLoading(false);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (field) => (e) => {
+    setFormData({ ...formData, [field]: e.target.value || "" });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: "" });
     }
   };
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+  
+    if (!validateForm()) return;
+  
+    const payload = {
+      studentId: formData.studentId,
+      password: formData.password,
+    };
+    console.log("Sending to server:", payload);
+  
+    setStatus({ loading: true, error: "" });
+  
+    try {
+      const response = await loginUser(payload);
+      setStatus({ loading: false, error: "" });
+      navigate("/");
+      setTimeout(() => window.location.reload(), 100);
+    } catch (error) {
+      const errorMessage = error.error || "รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง";
+      console.log("Server error:", error);
+      setStatus({
+        loading: false,
+        error: errorMessage,
+      });
+    }
+  };
   return (
     <Box
       sx={{
@@ -46,78 +101,86 @@ const Login = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(to right, #1c92d2, #f2fcfe)", 
+        background: "linear-gradient(to right, #1c92d2, #f2fcfe)",
       }}
     >
-      <Container
-        maxWidth="xs"
-        sx={{
-          p: 4,
-          borderRadius: "12px",
-          boxShadow: 4,
-          backgroundColor: "#fff",
-          textAlign: "center",
-          width: "100%",
-          maxWidth: "400px",
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold" color="primary" mb={2}>
-          เข้าสู่ระบบ
-        </Typography>
+      <Container maxWidth="xs">
+        <Fade in={true} timeout={600}>
+          <StyledPaper elevation={3}>
+            <Typography
+              variant="h5"
+              component="h1"
+              align="center"
+              sx={{ fontWeight: 700, color: "primary.main", mb: 4 }}
+            >
+              เข้าสู่ระบบ
+            </Typography>
 
-        {/* แสดงข้อความแจ้งเตือนเมื่อเกิดข้อผิดพลาด */}
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {status.error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                ❌ {status.error}
+              </Alert>
+            )}
 
-        <Box component="form" onSubmit={handleLogin} noValidate>
-          <TextField
-            fullWidth
-            margin="dense"
-            required
-            label="รหัสนักศึกษา"
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            variant="outlined"
-            sx={{
-              mb: 2,
-            }}
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            required
-            type="password"
-            label="รหัสผ่าน"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            variant="outlined"
-            sx={{
-              mb: 2,
-            }}
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            color="primary"
-            sx={{
-              mt: 3,
-              py: 1.5,
-              fontSize: "1rem",
-              fontWeight: "bold",
-              borderRadius: "8px",
-            }}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : "เข้าสู่ระบบ"}
-          </Button>
-        </Box>
+            <Box
+              component="form"
+              onSubmit={handleLogin}
+              noValidate
+              sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+            >
+              <TextField
+                fullWidth
+                required
+                label="รหัสนักศึกษา"
+                variant="outlined"
+                value={formData.studentId}
+                onChange={handleChange("studentId")}
+                error={!!errors.studentId}
+                helperText={errors.studentId}
+                disabled={status.loading}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
+              />
+              <TextField
+                fullWidth
+                required
+                type="password"
+                label="รหัสผ่าน"
+                variant="outlined"
+                value={formData.password}
+                onChange={handleChange("password")}
+                error={!!errors.password}
+                helperText={errors.password}
+                disabled={status.loading}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
+              />
+              <StyledButton
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={status.loading}
+                startIcon={status.loading && <CircularProgress size={20} />}
+              >
+                {status.loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+              </StyledButton>
+            </Box>
 
-        <Typography variant="body2" mt={2}>
-          ยังไม่มีบัญชี?{" "}
-          <Link href="/register" sx={{ fontWeight: "bold", textDecoration: "none" }}>
-            สมัครสมาชิก
-          </Link>
-        </Typography>
+            <Typography variant="body2" align="center" sx={{ mt: 3 }}>
+              ยังไม่มีบัญชี?{" "}
+              <Link
+                href="/register"
+                sx={{
+                  fontWeight: "bold",
+                  textDecoration: "none",
+                  color: "primary.main",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                สมัครสมาชิก
+              </Link>
+            </Typography>
+          </StyledPaper>
+        </Fade>
       </Container>
     </Box>
   );
