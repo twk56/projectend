@@ -55,7 +55,7 @@ const Home = () => {
   const [bookings, setBookings] = useState([]);
   const navigate = useNavigate();
   const [role, setRole] = useState('guest');
-  const [userId, setUserId] = useState(null); // เพิ่ม state สำหรับ userId
+  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bookingError, setBookingError] = useState(null);
@@ -79,7 +79,7 @@ const Home = () => {
 
         const userRole = response.data.role || 'guest';
         setRole(userRole);
-        setUserId(response.data._id); // ตั้งค่า userId จาก response
+        setUserId(response.data._id);
         console.log('👤 Role set to:', userRole, 'User ID:', response.data._id);
       } catch (error) {
         console.error('🔴 Error fetching user role:', error.response?.data || error.message);
@@ -171,7 +171,6 @@ const Home = () => {
     navigate(`/booking-details/${bookingId}`);
   };
 
-  // ฟังก์ชันตรวจสอบว่าห้องยังถูกล็อคอยู่หรือไม่
   const isBookingActive = (booking) => {
     const now = dayjs();
     return now.isBefore(dayjs(booking.endTime));

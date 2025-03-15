@@ -53,13 +53,12 @@ const Register = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    // เปลี่ยนจาก user.name เป็น user.fullName และป้องกัน undefined
     if (!user.fullName || typeof user.fullName !== "string" || !user.fullName.trim()) 
       newErrors.fullName = "กรุณากรอกชื่อ-นามสกุล";
     if (!user.email || typeof user.email !== "string" || !user.email.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/)) 
       newErrors.email = "กรุณากรอกอีเมลให้ถูกต้อง";
     if (!user.studentId || typeof user.studentId !== "string" || !/^\d{12}-\d$/.test(user.studentId.trim()))
-      newErrors.studentId = "รหัสนักศึกษาต้องเป็นตัวเลข 13 หลัก"; // ปรับข้อความให้สอดคล้อง
+      newErrors.studentId = "รหัสนักศึกษาต้องเป็นตัวเลข 13 หลัก";
     if (!user.password || user.password.length < 6) 
       newErrors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
     if (user.password !== user.confirmPassword) 
@@ -80,7 +79,7 @@ const Register = () => {
       studentId: user.studentId,
       password: user.password,
     };
-    console.log("Sending to server:", payload); // เพิ่ม debug
+    console.log("Sending to server:", payload);
 
     setStatus({ loading: true, success: false, error: "" });
 
@@ -97,7 +96,7 @@ const Register = () => {
       setTimeout(() => setStatus(prev => ({ ...prev, success: false })), 3000);
     } catch (error) {
       const errorMessage = error.response?.data?.error || "เกิดข้อผิดพลาดในการลงทะเบียน";
-      console.log("Server error:", error.response?.data); // เพิ่ม debug
+      console.log("Server error:", error.response?.data);
       setStatus({
         loading: false,
         success: false,
@@ -160,10 +159,10 @@ const Register = () => {
                 variant="outlined"
                 fullWidth
                 required
-                value={user.fullName} // เปลี่ยนจาก user.name
+                value={user.fullName}
                 onChange={handleChange("fullName")}
-                error={!!errors.fullName} // เปลี่ยนจาก errors.name
-                helperText={errors.fullName} // เปลี่ยนจาก errors.name
+                error={!!errors.fullName}
+                helperText={errors.fullName}
                 disabled={status.loading}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
               />
