@@ -207,7 +207,7 @@ const Home = () => {
                     <CardMedia
                       component="img"
                       height="140"
-                      image={`http://localhost:4999/uploads/${room.image}`}
+                      image={`http://62.72.30.12:3033/uploads/${room.image}`}
                       alt={`${room.name} Image`}
                       onClick={() => {
                         if (role !== 'user' && role !== 'admin') {

@@ -21,7 +21,7 @@ const BookingDetails = () => {
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const response = await axios.get(`http://localhost:4999/api/bookings/${id}`);
+        const response = await axios.get(`http://62.72.30.12:3033/api/bookings/${id}`);
         setBooking(response.data);
       } catch (error) {
         setError('ไม่สามารถดึงข้อมูลการจองได้');

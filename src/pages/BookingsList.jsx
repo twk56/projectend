@@ -51,7 +51,7 @@ const BookingsList = () => {
           navigate('/login');
           return;
         }
-        const response = await axios.get('http://localhost:4999/api/bookings', {
+        const response = await axios.get('http://62.72.30.12:3033/api/bookings', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings(response.data);
