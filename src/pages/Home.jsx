@@ -72,11 +72,7 @@ const Home = () => {
           return;
         }
 
-<<<<<<< HEAD
         const response = await axios.get('https://api.iaaaiksu.com/api/profile', {
-=======
-        const response = await axios.get('http://62.72.30.12:3033/api/profile', {
->>>>>>> aa5233746c02bfc5736b883c7f13b3771e777df8
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log('Response from /api/profile:', response.data);
@@ -99,11 +95,8 @@ const Home = () => {
     const fetchRooms = async () => {
       try {
         const token = localStorage.getItem('token');
-<<<<<<< HEAD
         const response = await axios.get('https://api.iaaaiksu.com/api/admin/rooms', {
-=======
-        const response = await axios.get('http://62.72.30.12:3033/api/admin/rooms', {
->>>>>>> aa5233746c02bfc5736b883c7f13b3771e777df8
+
           headers: { Authorization: `Bearer ${token}` },
         });
         setRooms(response.data);
@@ -121,11 +114,9 @@ const Home = () => {
     const fetchBookings = async () => {
       try {
         const token = localStorage.getItem('token');
-<<<<<<< HEAD
+
         const response = await axios.get('https://api.iaaaiksu.com/api/bookings', {
-=======
-        const response = await axios.get('http://62.72.30.12:3033/api/bookings', {
->>>>>>> aa5233746c02bfc5736b883c7f13b3771e777df8
+
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings(response.data);
@@ -145,11 +136,8 @@ const Home = () => {
         )
       );
       const response = await axios.patch(
-<<<<<<< HEAD
         `https://api.iaaaiksu.com/admin/rooms/${roomId}`,
-=======
-        `http://62.72.30.12:3033/api/admin/rooms/${roomId}`,
->>>>>>> aa5233746c02bfc5736b883c7f13b3771e777df8
+
         { status },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
