@@ -71,7 +71,7 @@ const Booking = () => {
     const fetchRoomDetails = async () => {
       if (roomId) {
         try {
-          const response = await axios.get(`http://localhost:4999/api/rooms/${roomId}`);
+          const response = await axios.get(`https://api.iaaaiksu.com/api/rooms/${roomId}`);
           setRoom(response.data.name);
         } catch (error) {
           setError('ไม่สามารถดึงข้อมูลห้องได้');
