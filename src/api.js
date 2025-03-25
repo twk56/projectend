@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://62.72.30.12:3033/";
+const API_URL = "https://api.iaaaiksu.com/";
 
 export const registerUser = async (userData) => {
     return await axios.post(`${API_URL}/register`, userData);

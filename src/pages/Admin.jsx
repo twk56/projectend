@@ -42,7 +42,7 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("http://62.72.30.12:3033/api/admin/stats", {
+      const response = await fetch("https://api.iaaaiksu.com/api/admin/stats", {
         headers: {
           "Content-Type": "application/json",
         },

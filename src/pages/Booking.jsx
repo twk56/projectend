@@ -54,7 +54,7 @@ const Booking = () => {
     const fetchRooms = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://62.72.30.12:3033/api/admin/rooms', {
+        const response = await axios.get('https://api.iaaaiksu.com/api/admin/rooms', {
           headers: { Authorization: `Bearer ${token}` },
         });
         const available = response.data.filter((r) => r.status === 'available');

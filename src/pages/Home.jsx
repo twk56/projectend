@@ -72,17 +72,17 @@ const Home = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:4999/api/profile', {
+        const response = await axios.get('https://api.iaaaiksu.com/api/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('✅ Response from /api/profile:', response.data);
+        console.log('Response from /api/profile:', response.data);
 
         const userRole = response.data.role || 'guest';
         setRole(userRole);
         setUserId(response.data._id);
-        console.log('👤 Role set to:', userRole, 'User ID:', response.data._id);
+        console.log('Role set to:', userRole, 'User ID:', response.data._id);
       } catch (error) {
-        console.error('🔴 Error fetching user role:', error.response?.data || error.message);
+        console.error('Error fetching user role:', error.response?.data || error.message);
         setRole('guest');
       } finally {
         setLoading(false);
@@ -95,7 +95,7 @@ const Home = () => {
     const fetchRooms = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:4999/api/admin/rooms', {
+        const response = await axios.get('https://api.iaaaiksu.com/api/admin/rooms', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRooms(response.data);
@@ -113,7 +113,7 @@ const Home = () => {
     const fetchBookings = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:4999/api/bookings', {
+        const response = await axios.get('https://api.iaaaiksu.com/api/bookings', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings(response.data);
@@ -133,7 +133,7 @@ const Home = () => {
         )
       );
       const response = await axios.patch(
-        `http://localhost:4999/api/admin/rooms/${roomId}`,
+        `https://api.iaaaiksu.com/admin/rooms/${roomId}`,
         { status },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -153,7 +153,7 @@ const Home = () => {
     if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:4999/api/bookings/${bookingId}`, {
+        await axios.delete(`https://api.iaaaiksu.com/api/bookings/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings((prevBookings) =>
@@ -207,7 +207,7 @@ const Home = () => {
                     <CardMedia
                       component="img"
                       height="140"
-                      image={`http://62.72.30.12:3033/uploads/${room.image}`}
+                      image={`https://api.iaaaiksu.com/uploads/${room.image}`}
                       alt={`${room.name} Image`}
                       onClick={() => {
                         if (role !== 'user' && role !== 'admin') {
