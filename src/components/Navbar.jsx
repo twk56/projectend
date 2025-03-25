@@ -112,7 +112,7 @@ const Navbar = () => {
     setIsLoggedIn(false);
     setIsAdmin(false);
     navigate("/login");
-    setTimeout(() => window.location.reload(), 100);
+    //setTimeout(() => window.location.reload(), 100);
   };
 
   return (
