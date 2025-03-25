@@ -280,13 +280,13 @@ const Home = () => {
                             วันที่: {dayjs(bookingOfThisRoom.startTime).format('DD MMMM YYYY')}
                           </Typography>
                           <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                            <Button
+                            {/* <Button
                               variant="outlined"
                               size="small"
                               onClick={() => handleViewDetails(bookingOfThisRoom._id)}
                             >
                               ดูรายละเอียด
-                            </Button>
+                            </Button> */}
                             {(role === 'admin' || 
                               (role === 'user' && bookingOfThisRoom.user?._id === userId)) && (
                               <Button
