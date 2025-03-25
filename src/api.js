@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:4999/api";
+const API_URL = "https://twk566.netlify.app/";
 
 export const registerUser = async (userData) => {
     return await axios.post(`${API_URL}/register`, userData);
