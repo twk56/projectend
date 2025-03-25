@@ -72,7 +72,7 @@ const Home = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:4999/api/profile', {
+        const response = await axios.get('http://62.72.30.12:3033/api/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log('✅ Response from /api/profile:', response.data);
