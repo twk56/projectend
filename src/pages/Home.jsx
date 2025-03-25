@@ -95,7 +95,7 @@ const Home = () => {
     const fetchRooms = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:4999/api/admin/rooms', {
+        const response = await axios.get('http://62.72.30.12:3033/api/admin/rooms', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRooms(response.data);
@@ -113,7 +113,7 @@ const Home = () => {
     const fetchBookings = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:4999/api/bookings', {
+        const response = await axios.get('http://62.72.30.12:3033/api/bookings', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings(response.data);
@@ -133,7 +133,7 @@ const Home = () => {
         )
       );
       const response = await axios.patch(
-        `http://localhost:4999/api/admin/rooms/${roomId}`,
+        `http://62.72.30.12:3033/api/admin/rooms/${roomId}`,
         { status },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -153,7 +153,7 @@ const Home = () => {
     if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:4999/api/bookings/${bookingId}`, {
+        await axios.delete(`http://62.72.30.12:3033/api/bookings/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings((prevBookings) =>
