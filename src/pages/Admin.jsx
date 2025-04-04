@@ -1,4 +1,52 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
+import { Bar } from "react-chartjs-2";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
+import { motion } from "framer-motion";
+import BASE_URL from "../config";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError)
+      return (
+        <motion.h1
+          className="text-red-500 text-2xl text-center mt-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          เกิดข้อผิดพลาดในระบบ
+        </motion.h1>
+      );
+    return this.props.children;
+  }
+}
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+const StatsCard = React.lazy(() =>
+  Promise.resolve({
+    default: React.memo(({ title, data }) => (
+      <motion.div
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+        whileHover={{ scale: 1.03 }}
+        className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition duration-300"
+      >
+        <h3 className="text-2xl font-semibold mb-3">{title}</h3>
+        <p className="text-lg">{data}</p>
+      </motion.div>
+    )),
+  })
+);
 
 const Admin = () => {
   const [loggedInUser, setLoggedInUser] = useState("");
@@ -7,94 +55,238 @@ const Admin = () => {
   const [loginCount, setLoginCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [theme, setTheme] = useState("light");
+  const [chartData, setChartData] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [bookings, setBookings] = useState([]);
+
+  const fetchBookings = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/booking_logs`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Bookings fetch failed with status: ${response.status}`);
+      }
+      const data = await response.json();
+      setBookings(data);
+    } catch (err) {
+      console.error("Bookings error:", err.message);
+      setError("ไม่สามารถโหลดข้อมูลการจองได้");
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/admin/stats`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error(`Stats fetch failed with status: ${response.status}`);
+      const data = await response.json();
+      setTotalUsers(data.totalUsers || 0);
+      setLoginCount(data.loginCount || 0);
+      setChartData({
+        labels: ["ผู้ใช้ทั้งหมด", "จํานวนการเข้าใช้"],
+        datasets: [
+          {
+            label: "สถิติระบบ",
+            data: [data.totalUsers || 0, data.loginCount || 0],
+            backgroundColor: ["#3498db", "#2ecc71"],
+          },
+        ],
+      });
+    } catch (err) {
+      console.error("Stats error:", err.message);
+      setError("ไม่สามารถโหลดข้อมูลสถิติได้");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     setLoggedInUser("Admin");
     setStatus("ออนไลน์");
 
-    const fetchStats = async () => {
-      try {
-        console.log("Fetch URL:", "http://localhost:4999/api/admin/stats");
-        const response = await fetch("http://localhost:4999/api/admin/stats");
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        const data = await response.json();
-        setTotalUsers(data.totalUsers);
-        setLoginCount(data.loginCount);
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
-        setLoading(false);
-      }
-    };
-
     fetchStats();
+    fetchBookings();
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchBookings();
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
-  if (loading) {
-    return (
-      <div style={styles.container}>
-        <p>กำลังโหลดข้อมูล...</p>
-      </div>
-    );
-  }
+  const handleRefresh = () => {
+    setLoading(true);
+    setError("");
+    fetchStats();
+  };
 
-  if (error) {
+  const containerTheme = theme === "light" ? "bg-gray-100 text-gray-800" : "bg-gray-900 text-gray-100";
+
+  if (loading)
     return (
-      <div style={styles.container}>
-        <p>{error}</p>
+      <div className={`min-h-screen flex items-center justify-center ${containerTheme}`}>
+        <motion.div className="text-xl" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          กำลังโหลด...
+        </motion.div>
       </div>
     );
-  }
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <h1>แดชบอร์ดแอดมิน</h1>
-      </header>
-      <main style={styles.main}>
-        <section style={styles.section}>
-          <h2>ยินดีต้อนรับ, {loggedInUser}</h2>
-          <p>สถานะการเข้าใช้งาน: {status}</p>
-          <p>จำนวนผู้ใช้ในระบบ: {totalUsers} คน</p>
-          <p>จำนวนผู้ที่เคยเข้าใช้งาน: {loginCount} คน</p>
-        </section>
-      </main>
-    </div>
-  );
-};
+    <ErrorBoundary>
+      <motion.div
+        className={`min-h-screen font-sans ${containerTheme} transition-colors duration-500`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <motion.header
+          className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6 rounded-b-xl shadow-md flex flex-col sm:flex-row justify-between items-center"
+          initial={{ y: -50 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-3xl font-bold text-white mb-4 sm:mb-0">แดชบอร์ดผู้ดูแล</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <motion.input
+              type="text"
+              className="px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="ค้นหา..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              whileFocus={{ scale: 1.02 }}
+            />
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              className="px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition duration-300"
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            >
+              {theme === "light" ? "Dark Mode" : "Light Mode"}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-500 transition duration-300"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              {loading ? "กำลังโหลด..." : "รีเฟรช"}
+            </motion.button>
+          </div>
+        </motion.header>
 
-const styles = {
-  container: {
-    fontFamily: "Arial, sans-serif",
-    margin: "0 auto",
-    maxWidth: "800px",
-    padding: "20px",
-    textAlign: "center",
-  },
-  header: {
-    backgroundColor: "#282c34",
-    color: "#fff",
-    padding: "20px",
-    textAlign: "center",
-  },
-  main: {
-    marginTop: "20px",
-  },
-  section: {
-    backgroundColor: "#f9f9f9",
-    padding: "20px",
-    borderRadius: "5px",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-  },
-  footer: {
-    marginTop: "40px",
-    textAlign: "center",
-    fontSize: "0.9em",
-    color: "#777",
-  },
+        <div className="max-w-7xl mx-auto p-6">
+          {error && (
+            <motion.div
+              className="bg-red-100 text-red-700 p-4 rounded-md mb-6 shadow-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              {error}
+            </motion.div>
+          )}
+
+          <motion.main className="mb-8" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.2 } } }}>
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              <Suspense fallback={<div>กำลังโหลด...</div>}>
+                <StatsCard title="ข้อมูลผู้ใช้" data={`ชื่อ: ${loggedInUser}`} />
+                <StatsCard title="สถานะ" data={<span className="text-green-500 font-bold">{status}</span>} />
+              </Suspense>
+              <motion.div
+                variants={cardVariants}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition duration-300"
+              >
+                <h3 className="text-2xl font-semibold mb-4">ภาพรวมสถิติ</h3>
+                <div className="h-48">
+                  <Bar
+                    data={chartData}
+                    options={{
+                      maintainAspectRatio: false,
+                      plugins: { legend: { position: "top" } },
+                    }}
+                  />
+                </div>
+              </motion.div>
+              <motion.div
+                variants={cardVariants}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 sm:col-span-2"
+              >
+                <h3 className="text-2xl font-semibold mb-4">ประวัติการเข้าใช้</h3>
+                {bookings.length > 0 ? (
+                  <motion.div
+                    className="overflow-x-auto"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-2 text-left">ห้อง</th>
+                          <th className="px-4 py-2 text-left">ผู้จอง</th>
+                          <th className="px-4 py-2 text-left">เริ่ม</th>
+                          <th className="px-4 py-2 text-left">สิ้นสุด</th>
+                          <th className="px-4 py-2 text-left">Action</th>
+                          <th className="px-4 py-2 text-left">Timestamp</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {bookings.map((log) => {
+                          const startTime = log.bookingId?.startTime || log.details?.startTime
+                            ? new Date(log.bookingId?.startTime || log.details?.startTime)
+                            : null;
+                          const endTime = log.bookingId?.endTime || log.details?.endTime
+                            ? new Date(log.bookingId?.endTime || log.details?.endTime)
+                            : null;
+                          const timestamp = log.timestamp ? new Date(log.timestamp) : null;
+                          return (
+                            <motion.tr
+                              key={log._id}
+                              whileHover={{ scale: 1.02, backgroundColor: "#f3f4f6" }}
+                              className="transition-colors duration-300"
+                            >
+                              <td className="px-4 py-2">{log.bookingId?.room || log.details?.room || "ไม่ระบุ"}</td>
+                              <td className="px-4 py-2">{log.userId?.fullName || "ไม่ระบุ"}</td>
+                              <td className="px-4 py-2">
+                                {startTime && !isNaN(startTime) ? startTime.toLocaleString("th-TH") : "ไม่ระบุ"}
+                              </td>
+                              <td className="px-4 py-2">
+                                {endTime && !isNaN(endTime) ? endTime.toLocaleString("th-TH") : "ไม่ระบุ"}
+                              </td>
+                              <td className="px-4 py-2">{log.action || "ไม่ระบุ"}</td>
+                              <td className="px-4 py-2">
+                                {timestamp && !isNaN(timestamp) ? timestamp.toLocaleString("th-TH") : "ไม่ระบุ"}
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </motion.div>
+                ) : (
+                  <p className="text-center text-gray-500">ยังไม่มีประวัติการเข้าใช้</p>
+                )}
+              </motion.div>
+            </div>
+          </motion.main>
+
+          <motion.footer className="text-center text-sm text-gray-600" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+            <p>อัพเดทล่าสุด: {new Date().toLocaleString("th-TH")}</p>
+          </motion.footer>
+        </div>
+      </motion.div>
+    </ErrorBoundary>
+  );
 };
 
 export default Admin;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerUser } from "../api";
+import { registerUser } from "../utils/api";
 import {
   Container,
   TextField,
@@ -12,25 +12,29 @@ import {
   Divider,
   Fade,
   CircularProgress,
+  Slide,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
-  borderRadius: theme.spacing(2),
-  background: theme.palette.background.paper,
-  boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+  borderRadius: theme.spacing(3),
+  background: "rgba(255, 255, 255, 0.95)",
+  boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+  backdropFilter: "blur(6px)",
+  WebkitBackdropFilter: "blur(6px)",
 }));
 
 const StyledButton = styled(Button)(({ theme }) => ({
   padding: theme.spacing(1.5),
   fontSize: "1.1rem",
   fontWeight: 600,
-  borderRadius: theme.spacing(1),
+  borderRadius: theme.spacing(2),
   textTransform: "none",
+  transition: "all 0.3s ease",
   "&:hover": {
-    transform: "translateY(-2px)",
-    transition: "all 0.2s ease-in-out",
+    transform: "translateY(-2px) scale(1.01)",
+    boxShadow: "0 6px 16px rgba(0, 0, 0, 0.2)",
   },
 }));
 
@@ -52,39 +56,32 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!user.fullName || typeof user.fullName !== "string" || !user.fullName.trim()) 
-      newErrors.fullName = "กรุณากรอกชื่อ-นามสกุล";
-    if (!user.email || typeof user.email !== "string" || !user.email.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/)) 
+    if (!user.fullName.trim()) newErrors.fullName = "กรุณากรอกชื่อ-นามสกุล";
+    if (!user.email.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/))
       newErrors.email = "กรุณากรอกอีเมลให้ถูกต้อง";
-    if (!user.studentId || typeof user.studentId !== "string" || !/^\d{12}-\d$/.test(user.studentId.trim()))
+    if (!/^\d{12}-\d$/.test(user.studentId.trim()))
       newErrors.studentId = "รหัสนักศึกษาต้องเป็นตัวเลข 13 หลัก";
-    if (!user.password || user.password.length < 6) 
+    if (user.password.length < 6)
       newErrors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
-    if (user.password !== user.confirmPassword) 
+    if (user.password !== user.confirmPassword)
       newErrors.confirmPassword = "รหัสผ่านไม่ตรงกัน";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-
-    const payload = {
-      fullName: user.fullName,
-      email: user.email,
-      studentId: user.studentId,
-      password: user.password,
-    };
-    console.log("Sending to server:", payload);
 
     setStatus({ loading: true, success: false, error: "" });
 
     try {
-      const response = await registerUser(payload);
+      await registerUser({
+        fullName: user.fullName,
+        email: user.email,
+        studentId: user.studentId,
+        password: user.password,
+      });
       setStatus({ loading: false, success: true, error: "" });
       setUser({
         fullName: "",
@@ -93,28 +90,20 @@ const Register = () => {
         password: "",
         confirmPassword: "",
       });
-      setTimeout(() => setStatus(prev => ({ ...prev, success: false })), 3000);
+      setTimeout(() => setStatus((prev) => ({ ...prev, success: false })), 3000);
     } catch (error) {
-      const errorMessage = error.response?.data?.error || "เกิดข้อผิดพลาดในการลงทะเบียน";
-      console.log("Server error:", error.response?.data);
-      setStatus({
-        loading: false,
-        success: false,
-        error: errorMessage,
-      });
+      const errorMessage =
+        error.response?.data?.error || "เกิดข้อผิดพลาดในการลงทะเบียน";
+      setStatus({ loading: false, success: false, error: errorMessage });
     }
   };
 
   const handleChange = (field) => (e) => {
     setUser({ ...user, [field]: e.target.value || "" });
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: "" });
-    }
+    if (errors[field]) setErrors({ ...errors, [field]: "" });
   };
 
-  const handleLoginRedirect = () => {
-    navigate("/login");
-  };
+  const handleLoginRedirect = () => navigate("/login");
 
   return (
     <Box
@@ -127,127 +116,100 @@ const Register = () => {
       }}
     >
       <Container maxWidth="sm">
-        <Fade in={true} timeout={600}>
+        <Slide in={true} direction="up" timeout={500}>
           <StyledPaper elevation={3}>
-            <Typography
-              variant="h4"
-              component="h1"
-              align="center"
-              sx={{ fontWeight: 700, color: "primary.main", mb: 4 }}
-            >
-              สมัครสมาชิก
-            </Typography>
+            <Fade in={true} timeout={600}>
+              <Box>
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  align="center"
+                  sx={{ fontWeight: 700, color: "primary.main", mb: 4 }}
+                >
+                  สมัครสมาชิก
+                </Typography>
 
-            {status.success && (
-              <Alert severity="success" sx={{ mb: 3 }}>
-                ลงทะเบียนสำเร็จ!
-              </Alert>
-            )}
-            {status.error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                ❌ {status.error}
-              </Alert>
-            )}
+                {status.success && (
+                  <Alert severity="success" sx={{ mb: 3 }}>
+                    ✅ ลงทะเบียนสำเร็จ!
+                  </Alert>
+                )}
+                {status.error && (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    ❌ {status.error}
+                  </Alert>
+                )}
 
-            <Box
-              component="form"
-              onSubmit={handleRegister}
-              sx={{ display: "flex", flexDirection: "column", gap: 3 }}
-            >
-              <TextField
-                label="ชื่อ-นามสกุล"
-                variant="outlined"
-                fullWidth
-                required
-                value={user.fullName}
-                onChange={handleChange("fullName")}
-                error={!!errors.fullName}
-                helperText={errors.fullName}
-                disabled={status.loading}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
-              />
-              <TextField
-                label="อีเมล"
-                type="email"
-                variant="outlined"
-                fullWidth
-                required
-                value={user.email}
-                onChange={handleChange("email")}
-                error={!!errors.email}
-                helperText={errors.email}
-                disabled={status.loading}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
-              />
-              <TextField
-                label="รหัสนักศึกษา"
-                variant="outlined"
-                fullWidth
-                required
-                value={user.studentId}
-                onChange={handleChange("studentId")}
-                error={!!errors.studentId}
-                helperText={errors.studentId}
-                disabled={status.loading}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
-              />
-              <TextField
-                label="รหัสผ่าน"
-                type="password"
-                variant="outlined"
-                fullWidth
-                required
-                value={user.password}
-                onChange={handleChange("password")}
-                error={!!errors.password}
-                helperText={errors.password}
-                disabled={status.loading}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
-              />
-              <TextField
-                label="ยืนยันรหัสผ่าน"
-                type="password"
-                variant="outlined"
-                fullWidth
-                required
-                value={user.confirmPassword}
-                onChange={handleChange("confirmPassword")}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword}
-                disabled={status.loading}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 8 } }}
-              />
-              <StyledButton
-                type="submit"
-                variant="contained"
-                color="primary"
-                fullWidth
-                disabled={status.loading}
-                startIcon={status.loading && <CircularProgress size={20} />}
-              >
-                {status.loading ? "กำลังสมัคร..." : "สมัครสมาชิก"}
-              </StyledButton>
-            </Box>
+                <Box
+                  component="form"
+                  onSubmit={handleRegister}
+                  sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+                >
+                  {[
+                    { label: "ชื่อ-นามสกุล", field: "fullName" },
+                    { label: "อีเมล", field: "email", type: "email" },
+                    { label: "รหัสนักศึกษา", field: "studentId" },
+                    { label: "รหัสผ่าน", field: "password", type: "password" },
+                    {
+                      label: "ยืนยันรหัสผ่าน",
+                      field: "confirmPassword",
+                      type: "password",
+                    },
+                  ].map(({ label, field, type = "text" }) => (
+                    <TextField
+                      key={field}
+                      label={label}
+                      type={type}
+                      variant="outlined"
+                      fullWidth
+                      required
+                      autoComplete="off"
+                      value={user[field]}
+                      onChange={handleChange(field)}
+                      error={!!errors[field]}
+                      helperText={errors[field]}
+                      disabled={status.loading}
+                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                    />
+                  ))}
 
-            <Divider sx={{ my: 3 }} />
-            
-            <Typography variant="body2" color="text.secondary" align="center">
-              มีบัญชีแล้ว?{" "}
-              <Button
-                onClick={handleLoginRedirect}
-                color="primary"
-                sx={{
-                  textTransform: "none",
-                  fontWeight: "bold",
-                  "&:hover": { textDecoration: "underline" },
-                }}
-                disabled={status.loading}
-              >
-                เข้าสู่ระบบ
-              </Button>
-            </Typography>
+                  <StyledButton
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    disabled={status.loading}
+                    startIcon={status.loading && <CircularProgress size={20} />}
+                  >
+                    {status.loading ? "กำลังสมัคร..." : "สมัครสมาชิก"}
+                  </StyledButton>
+                </Box>
+
+                <Divider sx={{ my: 3 }} />
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  align="center"
+                >
+                  มีบัญชีแล้ว?{" "}
+                  <Button
+                    onClick={handleLoginRedirect}
+                    color="primary"
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: "bold",
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                    disabled={status.loading}
+                  >
+                    เข้าสู่ระบบ
+                  </Button>
+                </Typography>
+              </Box>
+            </Fade>
           </StyledPaper>
-        </Fade>
+        </Slide>
       </Container>
     </Box>
   );

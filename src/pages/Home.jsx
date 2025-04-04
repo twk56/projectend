@@ -1,331 +1,199 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Container,
-  CardMedia,
-  Switch,
-  FormControlLabel,
-  Button,
-} from '@mui/material';
-import { styled } from '@mui/system';
-import dayjs from 'dayjs';
-import 'dayjs/locale/th';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Box, Typography, Grid, Container, Button } from "@mui/material";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.locale('th');
-dayjs.tz.setDefault('Asia/Bangkok');
-
-const RoomCard = styled(Card)(({ theme, status }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-  borderRadius: '12px',
-  border: `1px solid ${
-    status === 'available' ? theme.palette.success.main : theme.palette.error.main
-  }`,
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-  backgroundColor: status === 'available' ? '#e8f5e9' : '#ffebee',
-  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-  height: '100%',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-  },
-}));
-
-const Footer = styled(Box)(({ theme }) => ({
-  backgroundColor: '#FFFFFFFF',
-  color: '#000',
-  textAlign: 'center',
-  padding: theme.spacing(2),
-  marginTop: theme.spacing(4),
-}));
+import BASE_URL from "../config";
+import dayjs from "../utils/dayjsConfig";
+import AddRoom from "../components/AddRoom";
+import RoomCard from "../components/RoomCard";
+import Footer from "../components/Footer";
+import { getImageUrl } from '../utils/getImageUrl';
 
 const Home = () => {
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const navigate = useNavigate();
-  const [role, setRole] = useState('guest');
+  const [role, setRole] = useState("guest");
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bookingError, setBookingError] = useState(null);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+
+  const navigate = useNavigate();
+
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setRole("guest");
+        setRooms([]);
+        return;
+      }
+
+      const [profileRes, roomsRes, bookingsRes] = await Promise.all([
+        axios.get(`${BASE_URL}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${BASE_URL}/admin/rooms`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${BASE_URL}/bookings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      setRole(profileRes.data.role);
+      setUserId(profileRes.data._id);
+      setRooms(roomsRes.data || []);
+      setBookings(bookingsRes.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelExpiredBookings = async () => {
+    const token = localStorage.getItem("token");
+    const now = dayjs();
+
+    const expired = bookings.filter((b) => now.isAfter(dayjs(b.endTime)));
+    if (expired.length === 0) return;
+
+    try {
+      await Promise.all(
+        expired.map((b) =>
+          axios.delete(`${BASE_URL}/bookings/${b._id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        )
+      );
+      setBookings(bookings.filter((b) => now.isBefore(dayjs(b.endTime))));
+    } catch (err) {
+      setBookingError(
+        err.response?.data?.message || "ลบการจองอัตโนมัติผิดพลาด"
+      );
+    }
+  };
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        console.log('🔍 Token:', token);
-
-        if (!token) {
-          console.log('⚠️ ไม่พบ token ใน localStorage');
-          setRole('guest');
-          return;
-        }
-
-        const response = await axios.get('http://localhost:4999/api/profile', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log('✅ Response from /api/profile:', response.data);
-
-        const userRole = response.data.role || 'guest';
-        setRole(userRole);
-        setUserId(response.data._id);
-        console.log('👤 Role set to:', userRole, 'User ID:', response.data._id);
-      } catch (error) {
-        console.error('🔴 Error fetching user role:', error.response?.data || error.message);
-        setRole('guest');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUserRole();
-  }, []);
-
-  useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:4999/api/admin/rooms', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setRooms(response.data);
-      } catch (error) {
-        console.error('ไม่สามารถดึงข้อมูลห้องได้:', error);
-        setError('ไม่สามารถดึงข้อมูลห้องได้');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRooms();
-  }, []);
-
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:4999/api/bookings', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setBookings(response.data);
-      } catch (error) {
-        console.error('ไม่สามารถดึงข้อมูลการจองได้:', error);
-        setBookingError('ไม่สามารถดึงข้อมูลการจองได้');
-      }
-    };
-    fetchBookings();
+    fetchData();
+    const interval = setInterval(cancelExpiredBookings, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleStatusChange = async (roomId, status) => {
     try {
-      setRooms((prevRooms) =>
-        prevRooms.map((room) =>
-          room._id === roomId ? { ...room, status } : room
-        )
-      );
-      const response = await axios.patch(
-        `http://localhost:4999/api/admin/rooms/${roomId}`,
+      const token = localStorage.getItem("token");
+      const res = await axios.patch(
+        `${BASE_URL}/admin/rooms/${roomId}`,
         { status },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setRooms((prevRooms) =>
-        prevRooms.map((room) =>
-          room._id === roomId ? { ...room, status: response.data.status } : room
+      setRooms((prev) =>
+        prev.map((room) =>
+          room._id === roomId ? { ...room, status: res.data.status } : room
         )
       );
-    } catch (error) {
-      console.error('ไม่สามารถอัพเดตสถานะห้องได้:', error);
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "ไม่สามารถเปลี่ยนสถานะห้องได้"
+      );
     }
   };
 
   const handleCancelBooking = async (bookingId) => {
-    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?')) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:4999/api/bookings/${bookingId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setBookings((prevBookings) =>
-          prevBookings.filter((booking) => booking._id !== bookingId)
-        );
-        alert('ยกเลิกการจองสำเร็จ');
-      } catch (error) {
-        console.error('ไม่สามารถยกเลิกการจองได้:', error);
-        alert('เกิดข้อผิดพลาดในการยกเลิกการจอง');
-      }
+    if (!window.confirm("คุณแน่ใจว่าจะยกเลิกการจองนี้?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${BASE_URL}/bookings/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBookings((prev) => prev.filter((b) => b._id !== bookingId));
+      toast.success("ยกเลิกการจองแล้ว");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "ยกเลิกการจองล้มเหลว");
     }
   };
 
-  const handleViewDetails = (bookingId) => {
-    navigate(`/booking-details/${bookingId}`);
+  const handleDeleteRoom = async (roomId) => {
+    if (!window.confirm("คุณแน่ใจว่าจะลบห้องนี้?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${BASE_URL}/admin/rooms/${roomId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRooms((prev) => prev.filter((r) => r._id !== roomId));
+      toast.success("ลบห้องเรียบร้อย");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "ลบห้องไม่สำเร็จ");
+    }
   };
 
-  const isBookingActive = (booking) => {
-    const now = dayjs();
-    return now.isBefore(dayjs(booking.endTime));
+  const handleAddRoom = async (name, image) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `${BASE_URL}/admin/rooms`,
+        { name, image, status: "available" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setRooms((prev) => [...prev, res.data]);
+      setOpenAddDialog(false);
+      toast.success("เพิ่มห้องเรียบร้อย");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "ไม่สามารถเพิ่มห้องได้");
+    }
   };
 
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #EBEBEBFF, #FFFBFBFF)',
-        display: 'flex',
-        flexDirection: 'column',
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #EBEBEBFF, #FFFBFBFF)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <Container sx={{ flexGrow: 1, py: 4 }}>
+        {role === "admin" && (
+          <Box sx={{ mb: 4, textAlign: "right" }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setOpenAddDialog(true)}
+            >
+              เพิ่มห้องใหม่
+            </Button>
+          </Box>
+        )}
+
         {loading ? (
-          <Typography variant="h6" align="center">
-            กำลังโหลดข้อมูล...
-          </Typography>
+          <Typography align="center">กำลังโหลด...</Typography>
         ) : error ? (
-          <Typography variant="h6" color="error" align="center">
+          <Typography align="center" color="error">
             {error}
           </Typography>
         ) : (
           <Grid container spacing={4}>
             {rooms.map((room) => {
-              const bookingOfThisRoom = bookings.find((b) => b.room === room.name);
-              const isRoomLocked = bookingOfThisRoom && isBookingActive(bookingOfThisRoom);
-              const isRoomAvailable = !isRoomLocked && room.status === 'available';
-
+              const booking = bookings.find((b) => b.room === room.name);
               return (
-                <Grid item xs={12} sm={6} key={room._id}>
-                  <RoomCard status={room.status}>
-                    <CardMedia
-                      component="img"
-                      height="140"
-                      image={`http://localhost:4999/uploads/${room.image}`}
-                      alt={`${room.name} Image`}
-                      onClick={() => {
-                        if (role !== 'user' && role !== 'admin') {
-                          alert('คุณต้องล็อกอินเป็นผู้ใช้หรือผู้ดูแล');
-                          return;
-                        }
-                        if (room.status === 'unavailable') {
-                          alert('ห้องนี้ถูกปิด ไม่สามารถจองได้');
-                          return;
-                        }
-                        if (!isRoomAvailable) {
-                          alert('ห้องนี้ไม่ว่าง');
-                          return;
-                        }
-                        navigate('/booking');
-                      }}
-                      sx={{
-                        pointerEvents:
-                          (role !== 'user' && role !== 'admin') ||
-                          room.status === 'unavailable' ||
-                          !isRoomAvailable
-                            ? 'none'
-                            : 'auto',
-                        opacity:
-                          (role !== 'user' && role !== 'admin') ||
-                          room.status === 'unavailable' ||
-                          !isRoomAvailable
-                            ? 0.5
-                            : 1,
-                      }}
-                    />
-                    <CardContent
-                      sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-                    >
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          textAlign: 'center',
-                          fontWeight: 'bold',
-                          color: isRoomAvailable ? 'success.main' : 'error.main',
-                          opacity: isRoomAvailable ? 1 : 0.5,
-                        }}
-                      >
-                        {room.name}
-                      </Typography>
-
-                      {bookingOfThisRoom ? (
-                        <Box
-                          sx={{
-                            backgroundColor: '#fffde7',
-                            borderRadius: 1,
-                            p: 1,
-                            mt: 1,
-                          }}
-                        >
-                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                            ข้อมูลการจอง
-                          </Typography>
-                          <Typography variant="body2">
-                            ชื่อผู้จอง: {bookingOfThisRoom.user?.fullName || 'ไม่ระบุ'}
-                          </Typography>
-                          <Typography variant="body2">
-                            รหัสนักศึกษา: {bookingOfThisRoom.user?.studentId || 'ไม่ระบุ'}
-                          </Typography>
-                          <Typography variant="body2">
-                            เวลา: {dayjs(bookingOfThisRoom.startTime).format('HH:mm')} ถึง{' '}
-                            {dayjs(bookingOfThisRoom.endTime).format('HH:mm')}
-                          </Typography>
-                          <Typography variant="body2">
-                            วันที่: {dayjs(bookingOfThisRoom.startTime).format('DD MMMM YYYY')}
-                          </Typography>
-                          <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => handleViewDetails(bookingOfThisRoom._id)}
-                            >
-                              ดูรายละเอียด
-                            </Button>
-                            {(role === 'admin' || 
-                              (role === 'user' && bookingOfThisRoom.user?._id === userId)) && (
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                size="small"
-                                onClick={() => handleCancelBooking(bookingOfThisRoom._id)}
-                              >
-                                ยกเลิกการจอง
-                              </Button>
-                            )}
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" sx={{ textAlign: 'center', mt: 1 }}>
-                          {room.status === 'unavailable' ? 'ห้องนี้ถูกปิด' : 'ยังไม่มีการจอง'}
-                        </Typography>
-                      )}
-
-                      {role === 'admin' && (
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={room.status === 'available'}
-                              onChange={() =>
-                                handleStatusChange(
-                                  room._id,
-                                  room.status === 'available' ? 'unavailable' : 'available'
-                                )
-                              }
-                              color="primary"
-                            />
-                          }
-                          label={room.status === 'available' ? 'เปิด' : 'ปิด'}
-                          sx={{ textAlign: 'center', mt: 2 }}
-                        />
-                      )}
-                    </CardContent>
-                  </RoomCard>
+                <Grid item xs={12} sm={6} md={4} key={room._id}>
+                  <RoomCard
+                    room={room}
+                    booking={booking}
+                    role={role}
+                    userId={userId}
+                    getImageUrl={getImageUrl}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteRoom}
+                    onCancelBooking={handleCancelBooking}
+                    onClickImage={() => navigate("/booking")}
+                  />
                 </Grid>
               );
             })}
@@ -339,11 +207,15 @@ const Home = () => {
         </Typography>
       )}
 
-      <Footer>
-        <Typography variant="body2">
-          ผู้ใช้: {role}
-        </Typography>
-      </Footer>
+      <Footer role={role} />
+
+      <AddRoom
+        open={openAddDialog}
+        handleClose={() => setOpenAddDialog(false)}
+        handleAddRoom={handleAddRoom}
+      />
+
+      <ToastContainer position="top-right" autoClose={3000} theme="colored" />
     </Box>
   );
 };

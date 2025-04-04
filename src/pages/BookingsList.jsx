@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { cancelBooking } from '../api';
-import {
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Container,
-  Alert,
-} from '@mui/material';
+import { cancelBooking } from '../utils/api';
+import { Box, Typography, List, ListItem, ListItemText, IconButton, Container, Alert } from '@mui/material';
 import { styled } from '@mui/system';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
@@ -18,6 +9,8 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import BASE_URL from '../config';
+import { motion, AnimatePresence } from 'framer-motion';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -36,6 +29,23 @@ const StyledContainer = styled(Container)(({ theme }) => ({
   flexDirection: 'column',
 }));
 
+const containerVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
+};
+
+const listItemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
+  exit: { opacity: 0, x: 20, transition: { duration: 0.3 } },
+};
+
+const alertVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.3 } },
+  exit: { opacity: 0, transition: { duration: 0.3 } },
+};
+
 const BookingsList = () => {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
@@ -51,12 +61,12 @@ const BookingsList = () => {
           navigate('/login');
           return;
         }
-        const response = await axios.get('http://localhost:4999/api/bookings', {
+        const response = await axios.get(`${BASE_URL}/bookings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings(response.data);
-      } catch (error) {
-        console.error('ไม่สามารถดึงข้อมูลการจองได้:', error);
+      } catch (err) {
+        console.error(err);
         setError('ไม่สามารถดึงข้อมูลการจองได้');
       }
     };
@@ -66,17 +76,20 @@ const BookingsList = () => {
   const handleCancelBooking = async (bookingId) => {
     try {
       const response = await cancelBooking(bookingId);
-      console.log("✅ Cancel response:", response.data);
       setMessage(response.data.message);
       setBookings(bookings.filter((booking) => booking._id !== bookingId));
     } catch (err) {
-      console.error("Cancel error:", err.response?.data || err);
+      console.error(err);
       setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการยกเลิก');
     }
   };
 
   return (
     <Box
+      component={motion.div}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
       sx={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #89f7fe, #66a6ff)',
@@ -88,36 +101,51 @@ const BookingsList = () => {
     >
       <StyledContainer>
         <Typography variant="h4" align="center" gutterBottom>
-          รายการการจอง
+          รายการเข้าใช้ห้อง
         </Typography>
-
-        {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-        <List>
-          {bookings.length > 0 ? (
-            bookings.map((booking) => (
-              <ListItem
-                key={booking._id}
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    aria-label="delete"
-                    onClick={() => handleCancelBooking(booking._id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                }
-              >
-                <ListItemText
-                  primary={`${booking.room} - ${dayjs(booking.startTime).format('DD/MM/YYYY HH:mm')} ถึง ${dayjs(booking.endTime).format('HH:mm')}`}
-                  secondary={`ผู้จอง: ${booking.user?.studentId || 'ไม่ระบุ'}`}
-                />
-              </ListItem>
-            ))
-          ) : (
-            <Typography align="center">ไม่มีรายการการจอง</Typography>
+        <AnimatePresence>
+          {message && (
+            <motion.div variants={alertVariants} initial="hidden" animate="visible" exit="exit">
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {message}
+              </Alert>
+            </motion.div>
           )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {error && (
+            <motion.div variants={alertVariants} initial="hidden" animate="visible" exit="exit">
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <List>
+          <AnimatePresence>
+            {bookings.length > 0 ? (
+              bookings.map((booking) => (
+                <motion.div key={booking._id} variants={listItemVariants} initial="hidden" animate="visible" exit="exit">
+                  <ListItem
+                    secondaryAction={
+                      <IconButton edge="end" aria-label="delete" onClick={() => handleCancelBooking(booking._id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={`${booking.room} - ${dayjs(booking.startTime).format('DD/MM/YYYY HH:mm')} ถึง ${dayjs(booking.endTime).format('HH:mm')}`}
+                      secondary={`ผู้เข้าใช้งาน: ${booking.user?.studentId || 'ไม่ระบุ'}`}
+                    />
+                  </ListItem>
+                </motion.div>
+              ))
+            ) : (
+              <motion.div variants={listItemVariants} initial="hidden" animate="visible">
+                <Typography align="center">ไม่มีรายการเข้าใช้งาน</Typography>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </List>
       </StyledContainer>
     </Box>

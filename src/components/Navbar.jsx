@@ -29,14 +29,19 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 function HideOnScroll(props) {
   const { children } = props;
   const trigger = useScrollTrigger();
-  return <Slide appear={false} direction="down" in={!trigger}>{children}</Slide>;
+  return (
+    <Slide appear={false} direction="down" in={!trigger}>
+      {children}
+    </Slide>
+  );
 }
 
 const StyledAppBar = styled(AppBar)({
   backgroundColor: "#FFFFFF",
   boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-  borderBottom: "1px solid #000000",
+  borderBottom: "1px solid rgba(0,0,0,0.1)",
   padding: "8px 16px",
+  transition: "background-color 0.3s ease, box-shadow 0.3s ease",
   "@media (max-width: 768px)": {
     padding: "12px 16px",
     position: "absolute",
@@ -50,6 +55,10 @@ const Logo = styled(Typography)({
   color: "#000000",
   textDecoration: "none",
   cursor: "pointer",
+  transition: "color 0.3s ease",
+  "&:hover": {
+    color: "#1976d2",
+  },
 });
 
 const NavButton = styled(Button)({
@@ -69,7 +78,11 @@ const MobileMenuButton = styled(IconButton)({
   display: "none",
   "@media (max-width: 1024px)": {
     display: "block",
-    color: "#000",
+    color: "#000000",
+    transition: "color 0.3s ease",
+    "&:hover": {
+      color: "#1976d2",
+    },
   },
 });
 
@@ -89,7 +102,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    
+
     if (token && token.split(".").length === 3) {
       try {
         const decoded = jwtDecode(token);
@@ -101,7 +114,6 @@ const Navbar = () => {
         setIsAdmin(false);
       }
     } else {
-      console.warn("Token ไม่มีหรือรูปแบบไม่ถูกต้อง:", token);
       setIsLoggedIn(false);
       setIsAdmin(false);
     }
@@ -124,90 +136,152 @@ const Navbar = () => {
               CE
             </Logo>
 
-
             <DesktopMenu>
               {isLoggedIn ? (
                 <>
-                  <NavButton component={Link} to="/booking" startIcon={<BookIcon />}>
+                  <NavButton
+                    component={Link}
+                    to="/booking"
+                    startIcon={<BookIcon />}
+                  >
                     ห้อง
                   </NavButton>
-                  <NavButton component={Link} to="/bookings" startIcon={<ListIcon />}>
-                    รายการการจอง
+                  <NavButton
+                    component={Link}
+                    to="/bookings"
+                    startIcon={<ListIcon />}
+                  >
+                    รายการเข้าใช้ห้อง
                   </NavButton>
                   {isAdmin && (
-                    <NavButton component={Link} to="/admin" startIcon={<AdminPanelSettingsIcon />}>
-                      Admin
-                    </NavButton>
+                    <>
+                      <NavButton
+                        component={Link}
+                        to="/admin"
+                        startIcon={<AdminPanelSettingsIcon />}
+                      >
+                        Dashboard
+                      </NavButton>
+                      <NavButton
+                        component={Link}
+                        to="/admin/approve-users"
+                        startIcon={<PersonAddIcon />}
+                      >
+                        อนุมัติผู้ใช้
+                      </NavButton>
+                    </>
                   )}
-                  <NavButton component={Link} to="/profile" startIcon={<PersonIcon />}>
+                  <NavButton
+                    component={Link}
+                    to="/profile"
+                    startIcon={<PersonIcon />}
+                  >
                     โปรไฟล์
                   </NavButton>
-                  <NavButton onClick={handleLogout} startIcon={<ExitToAppIcon />}>
+                  <NavButton
+                    onClick={handleLogout}
+                    startIcon={<ExitToAppIcon />}
+                  >
                     ออกจากระบบ
                   </NavButton>
                 </>
               ) : (
                 <>
-                  <NavButton component={Link} to="/login" startIcon={<LoginIcon />}>
+                  <NavButton
+                    component={Link}
+                    to="/login"
+                    startIcon={<LoginIcon />}
+                  >
                     เข้าสู่ระบบ
                   </NavButton>
-                  <NavButton component={Link} to="/register" startIcon={<PersonAddIcon />}>
+                  <NavButton
+                    component={Link}
+                    to="/register"
+                    startIcon={<PersonAddIcon />}
+                  >
                     สมัครสมาชิก
                   </NavButton>
                 </>
               )}
             </DesktopMenu>
 
-
-            <MobileMenuButton aria-label="menu" onClick={() => setDrawerOpen(true)}>
+            <MobileMenuButton
+              aria-label="menu"
+              onClick={() => setDrawerOpen(true)}
+            >
               <MenuIcon />
             </MobileMenuButton>
           </Toolbar>
         </StyledAppBar>
       </HideOnScroll>
 
-
       <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         sx={{ zIndex: 1500, width: "80vw", maxWidth: "300px" }}
+        transitionDuration={{ enter: 300, exit: 300 }}
       >
-        <Box sx={{ width: "100%", padding: "16px" }} onClick={() => setDrawerOpen(false)}>
+        <Box
+          sx={{ width: "100%", padding: "16px" }}
+          onClick={() => setDrawerOpen(false)}
+        >
           <List>
             {!isLoggedIn ? (
               <>
                 <ListItem button component={Link} to="/login">
-                  <ListItemIcon><LoginIcon /></ListItemIcon>
+                  <ListItemIcon>
+                    <LoginIcon />
+                  </ListItemIcon>
                   <ListItemText primary="เข้าสู่ระบบ" />
                 </ListItem>
                 <ListItem button component={Link} to="/register">
-                  <ListItemIcon><PersonAddIcon /></ListItemIcon>
+                  <ListItemIcon>
+                    <PersonAddIcon />
+                  </ListItemIcon>
                   <ListItemText primary="สมัครสมาชิก" />
                 </ListItem>
               </>
             ) : (
               <>
                 <ListItem button component={Link} to="/booking">
-                  <ListItemIcon><BookIcon /></ListItemIcon>
-                  <ListItemText primary="จองห้อง" />
+                  <ListItemIcon>
+                    <BookIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="เข้าใช้ห้อง" />
                 </ListItem>
                 <ListItem button component={Link} to="/bookings">
-                  <ListItemIcon><ListIcon /></ListItemIcon>
-                  <ListItemText primary="รายการการจอง" />
+                  <ListItemIcon>
+                    <ListIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="รายการเข้าใช้ห้อง" />
                 </ListItem>
                 {isAdmin && (
-                  <ListItem button component={Link} to="/admin">
-                    <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
-                    <ListItemText primary="Admin" />
-                  </ListItem>
+                  <>
+                    <ListItem button component={Link} to="/admin">
+                      <ListItemIcon>
+                        <AdminPanelSettingsIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Dashboard" />
+                    </ListItem>
+                    <ListItem button component={Link} to="/admin/approve-users">
+                      <ListItemIcon>
+                        <PersonAddIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="อนุมัติผู้ใช้" />
+                    </ListItem>
+                  </>
                 )}
                 <ListItem button component={Link} to="/profile">
-                  <ListItemIcon><PersonIcon /></ListItemIcon>
+                  <ListItemIcon>
+                    <PersonIcon />
+                  </ListItemIcon>
                   <ListItemText primary="โปรไฟล์" />
                 </ListItem>
                 <ListItem button onClick={handleLogout}>
-                  <ListItemIcon><ExitToAppIcon /></ListItemIcon>
+                  <ListItemIcon>
+                    <ExitToAppIcon />
+                  </ListItemIcon>
                   <ListItemText primary="ออกจากระบบ" />
                 </ListItem>
               </>
