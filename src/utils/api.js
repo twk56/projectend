@@ -12,6 +12,25 @@ export const loginUser = async (userData) => {
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
       console.log("Stored token:", response.data.token);
+      if(response.data.studentId){
+        localStorage.setItem("studentId", response.data.studentId);
+        console.log("Stored studentId:", response.data.studentId);
+      } else {
+        const profileResponse = await getProfile();
+        if(profileResponse.data.studentId){
+          localStorage.setItem("studentId", profileResponse.data.studentId);
+          console.log("Stored studentId from profile:", profileResponse.data.studentId);
+        } else {
+          console.warn("No studentId returned from backend");
+        }
+      }
+
+      if(response.data.role){
+        localStorage.setItem("role", response.data.role);
+        console.log("Stored role:", response.data.role);
+      } else {
+        console.warn("No role returned from backend");
+      }
     } else {
       console.error("No token returned from backend");
     }
