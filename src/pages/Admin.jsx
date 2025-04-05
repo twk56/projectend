@@ -68,14 +68,13 @@ const Admin = () => {
   const [chartData, setChartData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [bookings, setBookings] = useState([]);
-  const [users, setUsers] = useState([]); // state สำหรับเก็บข้อมูลผู้ใช้
+  const [users, setUsers] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [sortColumn, setSortColumn] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
 
-  // ดึงข้อมูลประวัติการจอง
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -96,7 +95,6 @@ const Admin = () => {
     }
   };
 
-  // ดึงข้อมูลสถิติ
   const fetchStats = async () => {
     try {
       const response = await fetch(`${BASE_URL}/admin/stats`, {
@@ -127,7 +125,6 @@ const Admin = () => {
     }
   };
 
-  // ดึงข้อมูลผู้ใช้
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
