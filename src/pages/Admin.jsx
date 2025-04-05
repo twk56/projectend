@@ -11,6 +11,7 @@ import {
 } from "chart.js";
 import { motion } from "framer-motion";
 import BASE_URL from "../config";
+import dayjs from "dayjs";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -67,13 +68,14 @@ const Admin = () => {
   const [chartData, setChartData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [bookings, setBookings] = useState([]);
+  const [users, setUsers] = useState([]); // state สำหรับเก็บข้อมูลผู้ใช้
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
   const [sortColumn, setSortColumn] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
 
+  // ดึงข้อมูลประวัติการจอง
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -94,6 +96,7 @@ const Admin = () => {
     }
   };
 
+  // ดึงข้อมูลสถิติ
   const fetchStats = async () => {
     try {
       const response = await fetch(`${BASE_URL}/admin/stats`, {
@@ -124,15 +127,37 @@ const Admin = () => {
     }
   };
 
+  // ดึงข้อมูลผู้ใช้
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/admin/users`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Users fetch failed with status: ${response.status}`);
+      }
+      const data = await response.json();
+      setUsers(data);
+    } catch (err) {
+      console.error("Users error:", err.message);
+    }
+  };
+
   useEffect(() => {
     setLoggedInUser("Admin");
     setStatus("ออนไลน์");
 
     fetchStats();
     fetchBookings();
+    fetchUsers();
     const interval = setInterval(() => {
       fetchStats();
       fetchBookings();
+      fetchUsers();
     }, 30000);
 
     return () => {
@@ -144,6 +169,8 @@ const Admin = () => {
     setLoading(true);
     setError("");
     fetchStats();
+    fetchBookings();
+    fetchUsers();
   };
 
   const containerTheme =
@@ -414,6 +441,37 @@ const Admin = () => {
               </motion.div>
             </div>
           </motion.main>
+
+          {/* ส่วนแสดงรายชื่อผู้ใช้ */}
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white p-6 rounded-xl shadow-lg mt-8"
+          >
+            <h3 className="text-2xl font-semibold mb-4">รายชื่อผู้ใช้</h3>
+            {users.length > 0 ? (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2 text-left">ชื่อ</th>
+                    <th className="px-4 py-2 text-left">อีเมล</th>
+                    <th className="px-4 py-2 text-left">รหัสนักศึกษา</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {users.map((user) => (
+                    <tr key={user._id}>
+                      <td className="px-4 py-2 text-gray-700">{user.fullName}</td>
+                      <td className="px-4 py-2 text-gray-500">{user.email}</td>
+                      <td className="px-4 py-2 text-gray-500">{user.studentId}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-gray-500">ไม่มีข้อมูลผู้ใช้</p>
+            )}
+          </motion.section>
 
           <motion.footer
             className="text-center text-sm text-gray-600"
