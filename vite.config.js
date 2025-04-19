@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://rest-std-api.onrender.com',
+        target: 'https://ez-bb5m.onrender.com',
         changeOrigin: true,
         secure: false,
       },
