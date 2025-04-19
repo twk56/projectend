@@ -38,6 +38,7 @@ const StyledButton = styled(Button)(({ theme }) => ({
   },
 }));
 
+
 const Register = () => {
   const [user, setUser] = useState({
     fullName: "",
