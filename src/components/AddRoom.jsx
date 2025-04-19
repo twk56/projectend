@@ -34,7 +34,7 @@ const AddRoom = ({ open, handleClose, handleAddRoom }) => {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch('https://rest-std-api.onrender.com/api/upload', {
+      const response = await fetch(`${BASE_URL}/api/upload`, {
         method: 'POST',
         body: formData,
         headers: {
