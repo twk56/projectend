@@ -31,10 +31,15 @@ const AddRoom = ({ open, handleClose, handleAddRoom }) => {
     formData.append("image", selectedFile);
     formData.append("name", newRoomName);
 
+    const token = localStorage.getItem("token");
+
     try {
       const response = await fetch('http://localhost:5001/api/upload', {
         method: 'POST',
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
       });
       const data = await response.json();
 

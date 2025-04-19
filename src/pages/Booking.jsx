@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { bookRoom } from "../utils/api";
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Alert,
-  Container,
-  MenuItem,
-} from "@mui/material";
-import { styled } from "@mui/system";
 import { LocalizationProvider, TimePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import axios from "axios";
@@ -26,35 +16,21 @@ dayjs.extend(timezone);
 dayjs.locale("th");
 dayjs.tz.setDefault("Asia/Bangkok");
 
-const StyledContainer = styled(Container)(({ theme }) => ({
-  background: "rgba(255, 255, 255, 0.9)",
-  padding: theme.spacing(4),
-  borderRadius: theme.shape.borderRadius,
-  boxShadow: theme.shadows[5],
-  maxWidth: "500px",
-  marginTop: theme.spacing(4),
-  minHeight: "450px",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  position: "relative",
-  zIndex: 2,
-}));
-
+// 🎞️ Animation variants
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: "easeOut" } },
 };
 
 const formItemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
 const alertVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.3 } },
-  exit: { opacity: 0, transition: { duration: 0.3 } },
+  hidden: { opacity: 0, y: -10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.3 } },
 };
 
 const Booking = () => {
@@ -66,8 +42,9 @@ const Booking = () => {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const minTime = dayjs().tz("Asia/Bangkok").set("hour", 0).set("minute", 0);
-  const maxTime = dayjs().tz("Asia/Bangkok").set("hour", 23).set("minute", 59);
+
+  const minTime = dayjs().tz("Asia/Bangkok").startOf("day");
+  const maxTime = dayjs().tz("Asia/Bangkok").endOf("day");
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -79,7 +56,6 @@ const Booking = () => {
         const available = response.data.filter((r) => r.status === "available");
         setAvailableRooms(available);
       } catch (err) {
-        console.error("ไม่สามารถดึงข้อมูลห้องได้:", err);
         setError("ไม่สามารถดึงข้อมูลห้องจากฐานข้อมูลได้");
       }
     };
@@ -123,7 +99,7 @@ const Booking = () => {
     }
 
     const bookingData = {
-      room: room,
+      room,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
     };
@@ -133,60 +109,23 @@ const Booking = () => {
       setMessage(response.data.message);
       setTimeout(() => navigate("/"), 2000);
     } catch (err) {
-      console.error("Booking error:", err.response?.data || err);
       setError(err.response?.data?.message || "เกิดข้อผิดพลาดในการจอง");
     }
   };
 
   return (
-    <Box
-      component={motion.div}
+    <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      sx={{
-        minHeight: "100vh",
-        position: "relative",
-        overflow: "hidden",
-      }}
+      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 px-4"
     >
-      {/* Video Background จาก backend */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          zIndex: 0,
-        }}
+      <motion.div
+        variants={formItemVariants}
+        className="bg-white/70 backdrop-blur-md p-8 rounded-3xl shadow-2xl max-w-md w-full border border-white/30"
       >
-        <source src={`${BASE_URL}/uploads/bo.mp4`} type="video/mp4" />
-      </video>
+        <h2 className="text-3xl font-bold text-center text-indigo-600 mb-6">เข้าใช้ห้อง</h2>
 
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "rgba(0, 0, 0, 0.2)",
-          zIndex: 1,
-        }}
-      />
-
-      <StyledContainer sx={{ position: "relative", zIndex: 2 }}>
-        <motion.div variants={formItemVariants}>
-          <Typography variant="h4" align="center" gutterBottom>
-            เลือกห้องและช่วงเวลา
-          </Typography>
-        </motion.div>
         <AnimatePresence>
           {message && (
             <motion.div
@@ -194,92 +133,105 @@ const Booking = () => {
               initial="hidden"
               animate="visible"
               exit="exit"
+              className="mb-4 p-4 bg-green-100 text-green-800 rounded-xl text-center"
             >
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {message}
-              </Alert>
+              {message}
             </motion.div>
           )}
-        </AnimatePresence>
-        <AnimatePresence>
           {error && (
             <motion.div
               variants={alertVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              className="mb-4 p-4 bg-red-100 text-red-800 rounded-xl text-center"
             >
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
+              {error}
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.form
-          onSubmit={handleSubmit}
-          variants={formItemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <TextField
-            select
-            label="เลือกห้อง (ที่ว่าง)"
-            value={room}
-            onChange={(e) => setRoom(e.target.value)}
-            fullWidth
-            margin="normal"
-            required
-          >
-            {availableRooms.length > 0 ? (
-              availableRooms.map((r) => (
-                <MenuItem key={r._id} value={r.name}>
-                  {r.name}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled>ไม่มีห้องว่าง</MenuItem>
-            )}
-          </TextField>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <TimePicker
-              label="เวลาเริ่มต้น"
-              value={startTime}
-              onChange={(newValue) => setStartTime(newValue)}
-              minTime={minTime}
-              maxTime={maxTime}
-              ampm={false}
-              renderInput={(params) => (
-                <TextField {...params} fullWidth margin="normal" required />
-              )}
-            />
-          </LocalizationProvider>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <TimePicker
-              label="เวลาเสร็จสิ้น"
-              value={endTime}
-              onChange={(newValue) => setEndTime(newValue)}
-              minTime={startTime || minTime}
-              maxTime={maxTime}
-              ampm={false}
-              renderInput={(params) => (
-                <TextField {...params} fullWidth margin="normal" required />
-              )}
-            />
-          </LocalizationProvider>
-          <motion.div variants={formItemVariants}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              sx={{ mt: 3, py: 1.5, fontWeight: "bold", borderRadius: "30px" }}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ห้อง */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              เลือกห้อง (ที่ว่าง)
+            </label>
+            <select
+              value={room}
+              onChange={(e) => setRoom(e.target.value)}
+              required
+              className="w-full p-3 rounded-xl bg-white/90 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
             >
-              ยืนยันการจอง
-            </Button>
-          </motion.div>
-        </motion.form>
-      </StyledContainer>
-    </Box>
+              <option value="">-- เลือกห้อง --</option>
+              {availableRooms.length > 0 ? (
+                availableRooms.map((r) => (
+                  <option key={r._id} value={r.name}>
+                    {r.name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>ไม่มีห้องว่าง</option>
+              )}
+            </select>
+          </div>
+
+          {/* เวลา */}
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                เวลาเริ่มต้น
+              </label>
+              <TimePicker
+                value={startTime}
+                onChange={(newValue) => setStartTime(newValue)}
+                minTime={minTime}
+                maxTime={maxTime}
+                ampm={false}
+                slotProps={{
+                  textField: {
+                    required: true,
+                    className:
+                      "w-full p-3 rounded-xl bg-white/90 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200",
+                  },
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                เวลาเสร็จสิ้น
+              </label>
+              <TimePicker
+                value={endTime}
+                onChange={(newValue) => setEndTime(newValue)}
+                minTime={startTime || minTime}
+                maxTime={maxTime}
+                ampm={false}
+                slotProps={{
+                  textField: {
+                    required: true,
+                    className:
+                      "w-full p-3 rounded-xl bg-white/90 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200",
+                  },
+                }}
+              />
+            </div>
+          </LocalizationProvider>
+
+          {/* ปุ่ม */}
+          <motion.button
+            type="submit"
+            variants={formItemVariants}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
+            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-xl font-semibold shadow-md hover:from-indigo-700 hover:to-blue-600 transition duration-300"
+          >
+            ยืนยัน
+          </motion.button>
+        </form>
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -266,13 +266,13 @@ const Admin = () => {
               }}
               whileFocus={{ scale: 1.02 }}
             />
-            <motion.button
+            {/* <motion.button
               whileHover={{ scale: 1.05 }}
               className="px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition duration-300"
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             >
               {theme === "light" ? "Dark Mode" : "Light Mode"}
-            </motion.button>
+            </motion.button> */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-500 transition duration-300"
