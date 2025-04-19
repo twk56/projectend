@@ -96,7 +96,7 @@ export const cancelBooking = async (bookingId) => {
 };
 
 export const uploadProfilePicture = async (formData) => {
-  return await axios.post("http://localhost:5001/api/upload", formData, {
+  return await axios.post("https://rest-std-api.onrender.com/api/upload", formData, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
